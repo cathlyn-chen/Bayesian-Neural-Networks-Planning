@@ -24,7 +24,7 @@ def load_mnist(hp):
 
 
 def get_mnist():
-    train = datasets.MNIST(root=".",
+    train = datasets.MNIST(root="./data",
                            train=True,
                            download=True,
                            transform=transforms.ToTensor())
@@ -32,7 +32,7 @@ def get_mnist():
     train_data = [np.array(torch.flatten(data[:-1][0])) for data in train]
     train_label = [data[-1] for data in train]
 
-    test = datasets.MNIST(root=".",
+    test = datasets.MNIST(root="./data",
                           train=False,
                           download=True,
                           transform=transforms.ToTensor())
@@ -54,20 +54,20 @@ def get_mnist():
 
 if __name__ == '__main__':
     hp = mnist_hp()
-    train_loader, test_loader = load_mnist(hp)
+    # train_loader, test_loader = load_mnist(hp)
 
-    hp.train_size = len(train_loader.dataset)
-    hp.test_size = len(test_loader.dataset)
-    hp.num_batch = len(train_loader)
-    hp.test_batch = len(test_loader)
+    # hp.train_size = len(train_loader.dataset)
+    # hp.test_size = len(test_loader.dataset)
+    # hp.num_batch = len(train_loader)
+    # hp.test_batch = len(test_loader)
 
-    net = BayesianNetwork(28 * 28, 10, hp).to(hp.device)
-    run(net, train_loader, test_loader, hp)
+    # net = BayesianNetwork(784, 10, 30, hp).to(hp.device)
+    # run(net, train_loader, test_loader, hp)
 
     # torch.save(net.state_dict(), '/model')
 
-    # train_data, train_label_one_hot, test_data, test_label_one_hot = get_mnist(
-    # )
+    train_data, train_label_one_hot, test_data, test_label_one_hot = get_mnist(
+    )
 
     # run_new(net, train_data, train_label_one_hot, test_data,
     #         test_label_one_hot, hp)

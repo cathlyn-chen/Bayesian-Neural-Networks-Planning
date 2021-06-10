@@ -82,12 +82,12 @@ class BayesianLinear(nn.Module):
 
 
 class BayesianNetwork(nn.Module):
-    def __init__(self, input_size, output_size, hp):
+    def __init__(self, input_size, output_size, hidden_units, hp):
         super().__init__()
         self.input_size = input_size
-        self.l1 = BayesianLinear(input_size, 30, hp)
-        self.l2 = BayesianLinear(30, 30, hp)
-        self.l3 = BayesianLinear(30, output_size, hp)
+        self.l1 = BayesianLinear(input_size, hidden_units, hp)
+        self.l2 = BayesianLinear(hidden_units, hidden_units, hp)
+        self.l3 = BayesianLinear(hidden_units, output_size, hp)
         self.hp = hp
 
     def forward(self, x, sample=False):

@@ -1,41 +1,11 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from torchvision import datasets
 from torchvision.transforms import ToTensor
 import numpy as np
 import matplotlib.pyplot as plt
 
 from .bbb_hparams import colab_hparams
-
-
-def mnist_data():
-    train = datasets.MNIST(root="/data",
-                           train=True,
-                           download=True,
-                           transform=ToTensor())
-
-    train_data = [np.array(torch.flatten(data[:-1][0])) for data in train]
-    train_label = [data[-1] for data in train]
-
-    test = datasets.MNIST(root="/data",
-                          train=False,
-                          download=True,
-                          transform=ToTensor())
-
-    test_data = [np.array(torch.flatten(data[:-1][0])) for data in test]
-    test_label = [data[-1] for data in test]
-
-    train_label_one_hot = np.zeros((len(train_label), 10))
-    train_label_one_hot[np.arange(len(train_label)), train_label] = 1
-    train_label_one_hot = torch.tensor(train_label_one_hot,
-                                       dtype=float).float()
-
-    test_label_one_hot = np.zeros((len(test_label), 10))
-    test_label_one_hot[np.arange(len(test_label)), test_label] = 1
-    test_label_one_hot = torch.tensor(test_label_one_hot).float()
-
-    return train_data, train_label_one_hot, test_data, test_label_one_hot
 
 
 def log_gaussian(x, mu, sigma):
@@ -97,27 +67,24 @@ class BNNLayer(nn.Module):
 
 
 class BNN(nn.Module):
-    def __init__(self, n_input, n_output, sigma_prior):
+    def __init__(self, n_input, n_output, hidden_units, sigma_prior):
         super(BNN, self).__init__()
-        self.l1 = BNNLayer(n_input, 200, sigma_prior)
+        self.l1 = BNNLayer(n_input, hidden_units, sigma_prior)
         self.l1_relu = nn.ReLU()
-        self.l2 = BNNLayer(200, 200, sigma_prior)
+        self.l2 = BNNLayer(hidden_units, hidden_units, sigma_prior)
         self.l2_relu = nn.ReLU()
-        self.l3 = BNNLayer(200, 200, sigma_prior)
-        self.l3_relu = nn.ReLU()
-        self.l4 = BNNLayer(200, n_output, sigma_prior)
-        self.l4_softmax = nn.Softmax()
+        self.l3 = BNNLayer(200, n_output, sigma_prior)
+        self.l3_softmax = nn.Softmax()
 
     def forward(self, X, infer=False):
         output = self.l1_relu(self.l1(X, infer))
         output = self.l2_relu(self.l2(output, infer))
-        output = self.l3_relu(self.l3(output, infer))
-        output = self.l4_softmax(self.l4(output, infer))
+        output = self.l3_softmax(self.l4(output, infer))
         return output
 
     def get_lpw_lqw(self):
-        lpw = self.l1.lpw + self.l2.lpw + self.l3.lpw + self.l4.lpw
-        lqw = self.l1.lqw + self.l2.lqw + self.l3.lqw + self.l4.lqw
+        lpw = self.l1.lpw + self.l2.lpw + self.l3.lpw
+        lqw = self.l1.lqw + self.l2.lqw + self.l3.lqw
         return lpw, lqw
 
 
