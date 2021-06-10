@@ -29,20 +29,28 @@ def mnist_hp():
 
 def reg_hparams():
     hp = BBBHparams()
-    hp.train_size = 90
-    hp.test_size = 30
     hp.noise = 0.02
+    hp.n_epochs = 3000
 
-    hp.sigma1 = 0.1
-    hp.sigma2 = 0.6
+    hp.sigma1 = torch.FloatTensor([math.exp(-0)])
+    hp.sigma2 = torch.FloatTensor([math.exp(-6)])
+
+    # MoG
+    hp.m1 = 0
+    hp.s1 = 0.1
+    hp.m2 = 0
+    hp.s2 = 0.6
     hp.pi = 0.3
 
-    hp.batch_size = 30
+    hp.train_size = 90
+    hp.test_size = 30
+    hp.batch_size = 105
 
     hp.sigma_prior = float(np.exp(-3))
-    hp.learning_rate = 0.001
+    hp.learning_rate = 0.1
     hp.n_samples = 3
 
+    # Model 1
     hp.samples = 3
     hp.classes = 1
 

@@ -8,7 +8,7 @@ from torchvision import datasets, transforms
 
 from .bbb_hparams import mnist_hp
 from .bbb_model import BayesianNetwork
-from .bbb_train import run, run_new
+from .bbb_run import run, run_new
 
 
 def load_mnist(hp):
@@ -62,12 +62,12 @@ if __name__ == '__main__':
     hp.test_batch = len(test_loader)
 
     net = BayesianNetwork(28 * 28, 10, hp).to(hp.device)
-    # run(net, train_loader, test_loader, hp)
+    run(net, train_loader, test_loader, hp)
 
     # torch.save(net.state_dict(), '/model')
 
-    train_data, train_label_one_hot, test_data, test_label_one_hot = get_mnist(
-    )
+    # train_data, train_label_one_hot, test_data, test_label_one_hot = get_mnist(
+    # )
 
-    run_new(net, train_data, train_label_one_hot, test_data,
-            test_label_one_hot, hp)
+    # run_new(net, train_data, train_label_one_hot, test_data,
+    #         test_label_one_hot, hp)

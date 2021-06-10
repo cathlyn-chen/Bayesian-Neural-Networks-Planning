@@ -6,19 +6,19 @@ import torch.nn.functional as F
 
 
 class Gaussian(object):
-    def __init__(self, mu, rho, hparams):
+    def __init__(self, mu, rho, hp):
         super().__init__()
         self.mu = mu
         self.rho = rho
         self.normal = torch.distributions.Normal(0, 1)
-        self.hparams = hparams
+        self.hp = hp
 
     @property
     def sigma(self):
         return torch.log1p(torch.exp(self.rho))
 
     def sample(self):
-        epsilon = self.normal.sample(self.rho.size()).to(self.hparams.device)
+        epsilon = self.normal.sample(self.rho.size()).to(self.hp.device)
         return self.mu + self.sigma * epsilon
 
     def log_prob(self, input):
@@ -27,23 +27,22 @@ class Gaussian(object):
 
 
 class ScaleMixtureGaussian(object):
-    def __init__(self, hparams):
+    def __init__(self, hp):
         super().__init__()
-        self.hparams = hparams
-        self.gaussian1 = torch.distributions.Normal(0, hparams.sigma1)
-        self.gaussian2 = torch.distributions.Normal(0, hparams.sigma2)
+        self.hp = hp
+        self.gaussian1 = torch.distributions.Normal(0, hp.sigma1)
+        self.gaussian2 = torch.distributions.Normal(0, hp.sigma2)
 
     def log_prob(self, input):
         prob1 = torch.exp(self.gaussian1.log_prob(input))
         prob2 = torch.exp(self.gaussian2.log_prob(input))
-        return (torch.log(self.hparams.pi * prob1 +
-                          (1 - self.hparams.pi) * prob2)).sum()
+        return (torch.log(self.hp.pi * prob1 + (1 - self.hp.pi) * prob2)).sum()
 
 
 class BayesianLinear(nn.Module):
-    def __init__(self, in_features, out_features, hparams):
+    def __init__(self, in_features, out_features, hp):
         super().__init__()
-        self.hparams = hparams
+        self.hp = hp
         self.in_features = in_features
         self.out_features = out_features
         # Weight parameters
@@ -51,16 +50,16 @@ class BayesianLinear(nn.Module):
             torch.Tensor(out_features, in_features).uniform_(-0.2, 0.2))
         self.weight_rho = nn.Parameter(
             torch.Tensor(out_features, in_features).uniform_(-5, -4))
-        self.weight = Gaussian(self.weight_mu, self.weight_rho, hparams)
+        self.weight = Gaussian(self.weight_mu, self.weight_rho, hp)
         # Bias parameters
         self.bias_mu = nn.Parameter(
             torch.Tensor(out_features).uniform_(-0.2, 0.2))
         self.bias_rho = nn.Parameter(
             torch.Tensor(out_features).uniform_(-5, -4))
-        self.bias = Gaussian(self.bias_mu, self.bias_rho, hparams)
+        self.bias = Gaussian(self.bias_mu, self.bias_rho, hp)
         # Prior distributions
-        self.weight_prior = ScaleMixtureGaussian(self.hparams)
-        self.bias_prior = ScaleMixtureGaussian(self.hparams)
+        self.weight_prior = ScaleMixtureGaussian(self.hp)
+        self.bias_prior = ScaleMixtureGaussian(self.hp)
         self.log_prior = 0
         self.log_variational_posterior = 0
 
@@ -83,41 +82,38 @@ class BayesianLinear(nn.Module):
 
 
 class BayesianNetwork(nn.Module):
-    def __init__(self, input_size, output_size, hparams):
+    def __init__(self, input_size, output_size, hp):
         super().__init__()
         self.input_size = input_size
-        self.l1 = BayesianLinear(input_size, 400, hparams)
-        self.l2 = BayesianLinear(400, 400, hparams)
-        self.l3 = BayesianLinear(400, 400, hparams)
-        self.l4 = BayesianLinear(400, output_size, hparams)
-        self.hparams = hparams
+        self.l1 = BayesianLinear(input_size, 30, hp)
+        self.l2 = BayesianLinear(30, 30, hp)
+        self.l3 = BayesianLinear(30, output_size, hp)
+        self.hp = hp
 
     def forward(self, x, sample=False):
         # print(type(x))
-        x = x.view(-1, self.input_size)
+        x = x.reshape(-1, self.input_size)
         # x = np.array(x).reshape((-1, 28 * 28))
         x = F.relu(self.l1(x, sample))
         x = F.relu(self.l2(x, sample))
-        x = F.relu(self.l3(x, sample))
-        x = F.log_softmax(self.l4(x, sample), dim=1)
+        x = F.log_softmax(self.l3(x, sample), dim=1)
         return x
 
     def log_prior(self):
         return self.l1.log_prior \
-               + self.l2.log_prior + self.l3.log_prior + self.l4.log_prior
+               + self.l2.log_prior + self.l3.log_prior
 
     def log_variational_posterior(self):
         return self.l1.log_variational_posterior \
                + self.l2.log_variational_posterior \
-               + self.l3.log_variational_posterior + self.l4.log_variational_posterior
+               + self.l3.log_variational_posterior
 
     def sample_elbo(self, input, target):
-        samples = self.hparams.samples
-        outputs = torch.zeros(samples, self.hparams.batch_size,
-                              self.hparams.classes).to(self.hparams.device)
-        log_priors = torch.zeros(samples).to(self.hparams.device)
-        log_variational_posteriors = torch.zeros(samples).to(
-            self.hparams.device)
+        samples = self.hp.samples
+        outputs = torch.zeros(samples, self.hp.batch_size,
+                              self.hp.classes).to(self.hp.device)
+        log_priors = torch.zeros(samples).to(self.hp.device)
+        log_variational_posteriors = torch.zeros(samples).to(self.hp.device)
         for i in range(samples):
             outputs[i] = self(input, sample=True)
             log_priors[i] = self.log_prior()
@@ -128,5 +124,5 @@ class BayesianNetwork(nn.Module):
                                              target,
                                              size_average=False)
         loss = (log_variational_posterior -
-                log_prior) / self.hparams.num_batch + negative_log_likelihood
+                log_prior) / self.hp.num_batch + negative_log_likelihood
         return loss, log_prior, log_variational_posterior, negative_log_likelihood

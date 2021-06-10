@@ -18,7 +18,7 @@ def train(net, optimizer, epoch, train_loader, hp):
     return loss
 
 
-def train_new(net, optimizer, epoch, train_data, train_label, hp):
+def train_new(net, optimizer, train_data, train_label, hp):
     losses = []
     for b in range(hp.num_batch):
         net.zero_grad()
@@ -128,7 +128,7 @@ def run_new(net, train_data, train_label, test_data, test_label, hp):
     optimizer = optim.Adam(net.parameters())
     losses = []
     for epoch in range(hp.n_epochs):
-        loss = train_new(net, optimizer, epoch, train_data, train_label, hp)
+        loss = train_new(net, optimizer, train_data, train_label, hp)
         losses.append(loss)
 
         acc, err = test_new(net, test_data, test_label, hp)
