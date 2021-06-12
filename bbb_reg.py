@@ -42,15 +42,15 @@ def MoG(X, m1, s1, m2, s2, pi, noise):
 
 def MoG_data(hp):
     # Different data densities
-    train_low = np.linspace(0.0, 0.15, 60).reshape(-1, 1)
-    train_high = np.linspace(0.3, 0.6, 15).reshape(-1, 1)
-    train_medium = np.linspace(0.9, 1.2, 6).reshape(-1, 1)
+    train_low = np.linspace(0.3, 0.9, 30).reshape(-1, 1)
+    train_high = np.linspace(1.5, 2.1, 60).reshape(-1, 1)
+    train_medium = np.linspace(2.4, 3.3, 30).reshape(-1, 1)
 
     train_data = np.concatenate((train_low, train_high, train_medium), axis=0)
 
     train_label = MoG(train_data, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, hp.noise)
 
-    x_plot = np.linspace(-0.3, 1.5, 1000).reshape(-1, 1)
+    x_plot = np.linspace(-0.15, 4.2, 1000).reshape(-1, 1)
     true_y = MoG(x_plot, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, 0)
 
     return train_data, train_label, x_plot, true_y
@@ -152,6 +152,25 @@ def pred_plot(train_data, train_label, x_plot, true_y, pred_mean, pred_std):
     plt.show()
 
 
+def plot_hist(net):
+    pred_hist = [
+        net(Variable(torch.Tensor(np.matrix([0.0])))).data.numpy()[0][0]
+        for _ in range(100)
+    ]
+    plt.hist(pred_hist, density=True, bins=30, label='x=0.0')
+
+    pred_hist = [
+        net(Variable(torch.Tensor(np.matrix([0.9])))).data.numpy()[0][0]
+        for _ in range(100)
+    ]
+    # print(pred_hist)
+    plt.hist(pred_hist, density=True, bins=30, label='x=0.9')
+    plt.xlabel("Sampled y's")
+    plt.ylabel("y values")
+    plt.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
     hp = reg_hparams()
     # train_data, train_label, x_plot, true_y = toy_reg_data(hp)
@@ -166,3 +185,5 @@ if __name__ == '__main__':
     pred_mean, pred_std = eval(x_plot, net)
 
     pred_plot(train_data, train_label, x_plot, true_y, pred_mean, pred_std)
+
+    plot_hist(net)

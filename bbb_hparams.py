@@ -33,22 +33,22 @@ def mnist_hp():
 def reg_hparams():
     hp = BBBHparams()
     hp.noise = 0.02
-    hp.n_epochs = 3000
+    hp.n_epochs = 6000
 
     hp.sigma_prior1 = torch.FloatTensor([math.exp(-0)])
     hp.sigma_prior2 = torch.FloatTensor([math.exp(-6)])
     hp.pi = 0.3
     hp.noise_tol = .1
-    hp.prior = "scale_mixture"
+    hp.prior = "gaussian"
     hp.samples = 3
     hp.learning_rate = 0.1
     hp.task = 'regression'
-    hp.activation = 'relu'
+    hp.activation = 'sigmoid'
 
     # MoG
-    hp.m1 = 0
-    hp.s1 = 0.1
-    hp.m2 = 0
+    hp.m1 = 1.2
+    hp.s1 = 0.3
+    hp.m2 = 2.4
     hp.s2 = 0.6
 
     # hp.train_size = 90
