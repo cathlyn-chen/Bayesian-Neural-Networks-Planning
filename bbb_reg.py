@@ -166,11 +166,3 @@ if __name__ == '__main__':
     pred_mean, pred_std = eval(x_plot, net)
 
     pred_plot(train_data, train_label, x_plot, true_y, pred_mean, pred_std)
-
-    # hp.num_batch = int(len(train_data) / hp.batch_size)
-    # net = BayesianNetwork(1, 1, hp).to(hp.device)
-    # losses = run_new(net, train_data, train_target, test_data, test_target, hp)
-
-    # hp.n_train_batches = int(len(train_data) / hp.batch_size)
-    # net = BNN(len(train_data[0]), 1, hp.sigma_prior)
-    # run(train_data, train_target, test_data, test_target, hp)
