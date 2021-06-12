@@ -7,7 +7,7 @@ from torch.autograd import Variable
 from torchvision import datasets, transforms
 
 from .bbb_hparams import mnist_hp
-from .bbb_model import BayesianNetwork
+from .models.bnn_old import BayesianNetwork
 from .bbb_run import run, run_new
 
 

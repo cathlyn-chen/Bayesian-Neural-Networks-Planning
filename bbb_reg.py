@@ -5,10 +5,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 
 from .bbb_hparams import reg_hparams
-# from .bbb_model import BayesianNetwork
-from .bbb_model2 import BNN
-# from .bbb_torch_colab import *
-# from .bbb_run import run_new
+from .models.bnn import BNN
 
 np.random.seed(3)
 
@@ -40,6 +37,9 @@ def MoG(X, m1, s1, m2, s2, pi, noise):
     return pi * (g1 + epsilon) + (1 - pi) * (g2 + epsilon)
 
 
+# Regression Data
+
+
 def MoG_data(hp):
     # Different data densities
     train_low = np.linspace(0.0, 0.15, 60).reshape(-1, 1)
@@ -59,35 +59,37 @@ def MoG_data(hp):
 def toy_reg_data(hp):
     train_low = np.linspace(0.0, 0.15, 15).reshape(-1, 1)
     train_high = np.linspace(0.3, 0.6, 30).reshape(-1, 1)
-    train_medium = np.linspace(0.9, 1.2, 60).reshape(-1, 1)
+    train_medium = np.linspace(0.9, 1.2, 30).reshape(-1, 1)
 
     train_data = np.concatenate((train_low, train_high, train_medium), axis=0)
 
     train_label = toy_reg(train_data, hp.noise)
 
-    x_plot = np.linspace(-0.3, 1.5, 1000).reshape(-1, 1)
+    x_plot = np.linspace(-0.3, 1.8, 1000).reshape(-1, 1)
     true_y = toy_reg(x_plot, 0)
 
     return train_data, train_label, x_plot, true_y
 
 
-def initial_plot(train_data, train_label, x_plot, true_y):
-    plt.scatter(train_data,
-                train_label,
-                marker='+',
-                label='Training data',
-                color='black')
+def paper_reg_data(hp):
+    train_low = np.linspace(0.0, 0.15, 15).reshape(-1, 1)
+    train_high = np.linspace(0.15, 0.3, 30).reshape(-1, 1)
+    train_medium = np.linspace(0.3, 0.45, 15).reshape(-1, 1)
 
-    plt.plot(x_plot, true_y, label='Truth')
+    train_data = np.concatenate((train_low, train_high, train_medium), axis=0)
 
-    plt.title('Noisy Training Data and Ground Truth')
-    plt.legend()
-    plt.show()
+    train_label = paper_reg(train_data, hp.noise)
+
+    x_plot = np.linspace(-0.3, 1.2, 1000).reshape(-1, 1)
+    true_y = paper_reg(x_plot, 0)
+
+    return train_data, train_label, x_plot, true_y
 
 
-def train_bbb(train_data, train_label, hp):
-    # net = BayesianNetwork(1, 1, hp)
-    net = BNN(32, prior_var=10)
+### BBB
+
+
+def train_bnn(net, train_data, train_label, hp):
     optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
 
     for e in range(hp.n_epochs):
@@ -102,12 +104,9 @@ def train_bbb(train_data, train_label, hp):
             print('epoch: {}'.format(e + 1), 'loss', loss.item())
     print('Finished Training')
 
-    return net
-
 
 def eval(x_plot, net):
     with torch.no_grad():
-
         pred_lst = [
             net(Variable(torch.Tensor(x_plot))).data.numpy().squeeze(1)
             for _ in range(100)
@@ -119,6 +118,21 @@ def eval(x_plot, net):
     return pred_mean, pred_std
 
 
+# Plotting
+def initial_plot(train_data, train_label, x_plot, true_y):
+    plt.scatter(train_data,
+                train_label,
+                marker='+',
+                label='Training data',
+                color='black')
+
+    plt.plot(x_plot, true_y, label='Truth')
+
+    plt.title('Noisy Training Data and Ground Truth')
+    plt.legend()
+    plt.show()
+
+
 def pred_plot(train_data, train_label, x_plot, true_y, pred_mean, pred_std):
     plt.plot(x_plot, pred_mean, c='royalblue', label='Mean Pred')
     plt.fill_between(x_plot.reshape(-1, ),
@@ -127,14 +141,12 @@ def pred_plot(train_data, train_label, x_plot, true_y, pred_mean, pred_std):
                      color='cornflowerblue',
                      alpha=.5,
                      label='Epistemic Uncertainty (+/- 2 std)')
-    # print(test_data.reshape(30,))
 
     plt.scatter(train_data,
                 train_label,
                 marker='+',
                 color='black',
                 label='Training Data')
-    # plt.scatter(test_data, test_pred, marker='+', label='Test Pred', color='black')
     plt.plot(x_plot, true_y, color='grey', label='Truth')
     plt.legend()
     plt.show()
@@ -142,12 +154,14 @@ def pred_plot(train_data, train_label, x_plot, true_y, pred_mean, pred_std):
 
 if __name__ == '__main__':
     hp = reg_hparams()
-    train_data, train_label, x_plot, true_y = toy_reg_data(hp)
+    # train_data, train_label, x_plot, true_y = toy_reg_data(hp)
+    train_data, train_label, x_plot, true_y = MoG_data(hp)
+    # train_data, train_label, x_plot, true_y = paper_reg_data(hp)
 
-    print(train_data.shape, train_label.shape)
+    initial_plot(train_data, train_label, x_plot, true_y)
 
-    # initial_plot(train_data, train_label, x_plot, true_y)
-    net = train_bbb(train_data, train_label, hp)
+    net = BNN(1, 32, 1, hp)
+    train_bnn(net, train_data, train_label, hp)
 
     pred_mean, pred_std = eval(x_plot, net)
 

@@ -11,20 +11,23 @@ class BBBHparams(object):
 
 
 def mnist_hp():
-    hparams = BBBHparams()
-    hparams.batch_size = 1000
-    hparams.test_batch_size = 5
+    hp = BBBHparams()
+    hp.batch_size = 1000
+    hp.test_batch_size = 5
 
-    hparams.classes = 10
-    hparams.n_epochs = 10
-    hparams.samples = 2
-    hparams.test_samples = 10
+    hp.classes = 10
+    hp.n_epochs = 10
+    hp.samples = 2
+    hp.test_samples = 10
 
-    hparams.pi = 0.5
-    hparams.sigma1 = torch.FloatTensor([math.exp(-0)])
-    hparams.sigma2 = torch.FloatTensor([math.exp(-6)])
+    hp.pi = 0.5
+    hp.sigma1 = torch.FloatTensor([math.exp(-0)])
+    hp.sigma2 = torch.FloatTensor([math.exp(-6)])
 
-    return hparams
+    hp.task = 'classification'
+    hp.activation = 'relu'
+
+    return hp
 
 
 def reg_hparams():
@@ -32,27 +35,30 @@ def reg_hparams():
     hp.noise = 0.02
     hp.n_epochs = 3000
 
-    hp.sigma1 = torch.FloatTensor([math.exp(-0)])
-    hp.sigma2 = torch.FloatTensor([math.exp(-6)])
+    hp.sigma_prior1 = torch.FloatTensor([math.exp(-0)])
+    hp.sigma_prior2 = torch.FloatTensor([math.exp(-6)])
+    hp.pi = 0.3
+    hp.noise_tol = .1
+    hp.prior = "scale_mixture"
+    hp.samples = 3
+    hp.learning_rate = 0.1
+    hp.task = 'regression'
+    hp.activation = 'relu'
 
     # MoG
     hp.m1 = 0
     hp.s1 = 0.1
     hp.m2 = 0
     hp.s2 = 0.6
-    hp.pi = 0.3
 
-    hp.train_size = 90
-    hp.test_size = 30
-    hp.batch_size = 105
+    # hp.train_size = 90
+    # hp.test_size = 30
+    # hp.batch_size = 105
 
-    hp.sigma_prior = float(np.exp(-3))
-    hp.learning_rate = 0.1
-    hp.n_samples = 3
+    # hp.sigma_prior = float(np.exp(-3))
 
-    # Model 1
-    hp.samples = 3
-    hp.classes = 1
+    # hp.n_samples = 3
+    # hp.classes = 1
 
     return hp
 
