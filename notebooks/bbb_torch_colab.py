@@ -6,7 +6,7 @@ from torchvision.transforms import ToTensor
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .bbb_hparams import colab_hparams
+from .hparams import colab_hparams
 
 
 def get_mnist():

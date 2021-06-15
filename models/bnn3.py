@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -69,18 +70,20 @@ class BNNLayer(nn.Module):
 
 
 class BNN(nn.Module):
-    def __init__(self, n_input, hidden_units, n_output, hp):
+    def __init__(self, hp):
         # Initialize the network but using the BBB layer
         super().__init__()
         self.hp = hp
-        self.input = BNNLayer(n_input, hidden_units, hp)
+        self.input = BNNLayer(hp.n_input, hp.hidden_units, hp)
 
         if hp.activation == 'sigmoid':
             self.act = nn.Sigmoid()
         elif hp.activation == 'relu':
             self.act = nn.ReLU()
+        elif hp.activation == 'tanh':
+            self.act = nn.Tanh()
 
-        self.output = BNNLayer(hidden_units, n_output, hp)
+        self.output = BNNLayer(hp.hidden_units, hp.n_output, hp)
 
         if hp.task == 'classification':
             self.softmax = nn.Softmax()
@@ -103,24 +106,49 @@ class BNN(nn.Module):
         # Log posterior over all the layers
         return self.input.log_post + self.output.log_post
 
-    def sample_elbo(self, input, target, samples):
+    def sample_elbo(self, input, target):
+        samples = self.hp.n_samples
         # Negative elbo as loss function
+        # outputs = torch.Tensor([self(input).reshape(-1) for _ in range(samples)])
+        # log_likes = torch.tensor([
+        #     Normal(self(input).data.reshape(-1), self.noise_tol).log_prob(
+        #         target.reshape(-1)).sum() for i in range(samples)
+        # ],
+        #                          requires_grad=True)
+        # log_priors = torch.tensor([self.log_prior() for _ in range(samples)],
+        #                           requires_grad=True)
+        # log_posts = torch.tensor([self.log_post() for _ in range(samples)],
+        #                          requires_grad=True)
+
+        # output = self(input)
+        # loss = torch.tensor(
+        #     [(1. / self.hp.n_train_batches) *
+        #      (self.log_post() - self.log_prior()) -
+        #      Normal(self(input).reshape(-1), self.noise_tol).log_prob(
+        #          target.reshape(-1)).sum() for i in range(samples)],
+        #     requires_grad=True).mean()
+        # '''
         # Initialize tensors
         outputs = torch.zeros(samples, target.shape[0])
         log_priors = torch.zeros(samples)
         log_posts = torch.zeros(samples)
         log_likes = torch.zeros(samples)
         # Make predictions and calculate prior, posterior, and likelihood for a given number of samples
+
         for i in range(samples):
             outputs[i] = self(input).reshape(-1)  # make predictions
             log_priors[i] = self.log_prior()
             log_posts[i] = self.log_post()
             log_likes[i] = Normal(outputs[i], self.noise_tol).log_prob(
                 target.reshape(-1)).sum()
-        # Monte carlo estimate of prior posterior and likelihood
+        # '''
+
+        # Monte Carlo estimate of prior posterior and likelihood
         log_prior = log_priors.mean()
         log_post = log_posts.mean()
         log_like = log_likes.mean()
-        # Negative elbo
-        loss = log_post - log_prior - log_like
+
+        loss = (1. / self.hp.n_train_batches) * (log_post -
+                                                 log_prior) - log_like
+
         return loss

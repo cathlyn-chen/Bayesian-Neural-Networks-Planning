@@ -39,7 +39,7 @@ class ScaleMixtureGaussian(object):
         return (torch.log(self.hp.pi * prob1 + (1 - self.hp.pi) * prob2)).sum()
 
 
-class BayesianLinear(nn.Module):
+class BNNLayer(nn.Module):
     def __init__(self, in_features, out_features, hp):
         super().__init__()
         self.hp = hp
@@ -81,13 +81,13 @@ class BayesianLinear(nn.Module):
         return F.linear(input, weight, bias)
 
 
-class BayesianNetwork(nn.Module):
-    def __init__(self, input_size, output_size, hidden_units, hp):
+class BNN(nn.Module):
+    def __init__(self, input_size, hidden_units, output_size, hp):
         super().__init__()
         self.input_size = input_size
-        self.l1 = BayesianLinear(input_size, hidden_units, hp)
-        self.l2 = BayesianLinear(hidden_units, hidden_units, hp)
-        self.l3 = BayesianLinear(hidden_units, output_size, hp)
+        self.l1 = BNNLayer(input_size, hidden_units, hp)
+        # self.l2 = BayesianLinear(hidden_units, hidden_units, hp)
+        self.l3 = BNNLayer(hidden_units, output_size, hp)
         self.hp = hp
 
     def forward(self, x, sample=False):
@@ -95,18 +95,18 @@ class BayesianNetwork(nn.Module):
         x = x.reshape(-1, self.input_size)
         # x = np.array(x).reshape((-1, 28 * 28))
         x = F.relu(self.l1(x, sample))
-        x = F.relu(self.l2(x, sample))
-        x = F.log_softmax(self.l3(x, sample), dim=1)
+        # x = F.relu(self.l2(x, sample))
+        if self.hp.task == 'classification':
+            x = F.log_softmax(self.l3(x, sample), dim=1)
+        else:
+            x = self.l3(x, sample)
         return x
 
     def log_prior(self):
-        return self.l1.log_prior \
-               + self.l2.log_prior + self.l3.log_prior
+        return self.l1.log_prior + self.l3.log_prior
 
     def log_variational_posterior(self):
-        return self.l1.log_variational_posterior \
-               + self.l2.log_variational_posterior \
-               + self.l3.log_variational_posterior
+        return self.l1.log_variational_posterior + self.l3.log_variational_posterior
 
     def sample_elbo(self, input, target):
         samples = self.hp.samples

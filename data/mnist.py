@@ -6,9 +6,8 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
-from .bbb_hparams import mnist_hp
-from .models.bnn_old import BayesianNetwork
-from .bbb_run import run, run_new
+from ..hparams import mnist_hp
+from ..models.bnn2 import BNN
 
 
 def load_mnist(hp):

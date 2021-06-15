@@ -1,46 +1,9 @@
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torch.autograd import Variable
 
 
-def train(net, optimizer, epoch, train_loader, hp):
-    net.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(hp.device), target.to(hp.device)
-        net.zero_grad()
-        loss, log_prior, log_variational_posterior, negative_log_likelihood = net.sample_elbo(
-            data, target)
-        loss.backward()
-        optimizer.step()
-
-    return loss
-
-
-def train_new(net, optimizer, train_data, train_label, hp):
-    losses = []
-    for b in range(hp.num_batch):
-        net.zero_grad()
-
-        # Obtain minibatch
-        X = Variable(
-            torch.Tensor(train_data[b * hp.batch_size:(b + 1) *
-                                    hp.batch_size]))
-        y = Variable(
-            torch.Tensor(train_label[b * hp.batch_size:(b + 1) *
-                                     hp.batch_size]))
-
-        loss, _, _, _ = net.sample_elbo(X, y)
-        loss.backward()
-        optimizer.step()
-
-        losses.extend(loss.data.numpy())
-
-    return np.mean(losses)
-
-
-def test(net, test_loader, hp):
+def test2(net, test_loader, hp):
     net.eval()
     with torch.no_grad():
         correct = 0
@@ -60,7 +23,7 @@ def test(net, test_loader, hp):
         return acc
 
 
-def test_new(net, test_data, test_label, hp):
+def test1(net, test_data, test_label, hp):
     with torch.no_grad():
         X_test = Variable(torch.Tensor(test_data))
 
@@ -108,31 +71,3 @@ def test_ensemble(net, test_loader, hp):
             print('Posterior Mean Accuracy: {}%'.format(num / hp.test_size *
                                                         100))
     print('Test Ensemble Accuracy: {}%'.format(correct / hp.test_size * 100))
-
-
-def run(net, train_loader, test_loader, hp):
-    optimizer = optim.Adam(net.parameters())
-
-    losses = []
-    for epoch in range(hp.n_epochs):
-        loss = train(net, optimizer, epoch, train_loader, hp)
-        losses.append(loss)
-
-        acc = test(net, test_loader, hp)
-        # test_ensemble(net, test_loader, hp)
-
-        print('epoch', epoch, 'loss', loss.data.numpy(), 'test_acc', acc)
-
-
-def run_new(net, train_data, train_label, test_data, test_label, hp):
-    optimizer = optim.Adam(net.parameters())
-    losses = []
-    for epoch in range(hp.n_epochs):
-        loss = train_new(net, optimizer, train_data, train_label, hp)
-        losses.append(loss)
-
-        acc, err = test_new(net, test_data, test_label, hp)
-
-        print('epoch', epoch, 'loss', loss, 'test_acc', acc)
-
-    return losses
