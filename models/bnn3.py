@@ -22,9 +22,7 @@ class BNNLayer(nn.Module):
     def __init__(self, n_input, n_output, hp):
         # Initialize BNN layer
         super().__init__()
-        # Set input & output dimensions
-        self.n_input = n_input
-        self.n_output = n_output
+        self.hp = hp
 
         # Initialize mu and rho parameters for layer's weights
         self.w_mu = nn.Parameter(torch.zeros(n_output, n_input))
@@ -33,6 +31,11 @@ class BNNLayer(nn.Module):
         # Initialize mu and rho parameters for the layer's bias
         self.b_mu = nn.Parameter(torch.zeros(n_output))
         self.b_rho = nn.Parameter(torch.zeros(n_output))
+
+        # nn.init.xavier_uniform_(self.w_mu)
+        # nn.init.xavier_uniform_(self.w_rho)
+        # nn.init.zeros_(self.b_mu)
+        # nn.init.zeros_(self.b_rho)
 
         # Initialize weight samples - calculated whenever the layer makes a prediction
         self.w = None
@@ -43,6 +46,8 @@ class BNNLayer(nn.Module):
             self.prior = torch.distributions.Normal(0, hp.sigma_prior1)
         elif hp.prior == 'scale_mixture':
             self.prior = ScaleMixtureGaussian(hp)
+        elif hp.prior == 'ncp':
+            pass
 
     def forward(self, input):
         # Sample weights
@@ -76,6 +81,8 @@ class BNN(nn.Module):
         self.hp = hp
         self.input = BNNLayer(hp.n_input, hp.hidden_units, hp)
 
+        # self.hidden = BNNLayer(hp.hidden_units, hp.hidden_units, hp)
+
         if hp.activation == 'sigmoid':
             self.act = nn.Sigmoid()
         elif hp.activation == 'relu':
@@ -91,8 +98,8 @@ class BNN(nn.Module):
         self.noise_tol = hp.noise_tol  # Used to calculate likelihood
 
     def forward(self, x):
-        out = self.input(x)
-        out = self.act(out)
+        out = self.act(self.input(x))
+        # out = self.act(self.hidden(out))
         out = self.output(out)
         if self.hp.task == 'classification':
             out = self.softmax(out)
@@ -108,32 +115,29 @@ class BNN(nn.Module):
 
     def sample_elbo(self, input, target):
         samples = self.hp.n_samples
-        # Negative elbo as loss function
-        # outputs = torch.Tensor([self(input).reshape(-1) for _ in range(samples)])
-        # log_likes = torch.tensor([
-        #     Normal(self(input).data.reshape(-1), self.noise_tol).log_prob(
-        #         target.reshape(-1)).sum() for i in range(samples)
-        # ],
-        #                          requires_grad=True)
-        # log_priors = torch.tensor([self.log_prior() for _ in range(samples)],
-        #                           requires_grad=True)
-        # log_posts = torch.tensor([self.log_post() for _ in range(samples)],
-        #                          requires_grad=True)
+        ''' Vectorize
+        outputs = torch.stack(
+            [self(input).reshape(-1) for _ in range(samples)])
 
-        # output = self(input)
-        # loss = torch.tensor(
-        #     [(1. / self.hp.n_train_batches) *
-        #      (self.log_post() - self.log_prior()) -
-        #      Normal(self(input).reshape(-1), self.noise_tol).log_prob(
-        #          target.reshape(-1)).sum() for i in range(samples)],
-        #     requires_grad=True).mean()
-        # '''
+        log_priors = torch.tensor([self.log_prior() for _ in range(samples)],
+                                  requires_grad=True)
+
+        log_posts = torch.tensor([self.log_post() for _ in range(samples)],
+                                 requires_grad=True)
+
+        log_likes = torch.tensor([
+            Normal(outputs[i], self.noise_tol).log_prob(
+                target.reshape(-1)).sum() for i in range(samples)
+        ],
+                                 requires_grad=True)
+        '''
+
+        # ''' Non-vectorize
         # Initialize tensors
         outputs = torch.zeros(samples, target.shape[0])
         log_priors = torch.zeros(samples)
         log_posts = torch.zeros(samples)
         log_likes = torch.zeros(samples)
-        # Make predictions and calculate prior, posterior, and likelihood for a given number of samples
 
         for i in range(samples):
             outputs[i] = self(input).reshape(-1)  # make predictions
@@ -141,6 +145,9 @@ class BNN(nn.Module):
             log_posts[i] = self.log_post()
             log_likes[i] = Normal(outputs[i], self.noise_tol).log_prob(
                 target.reshape(-1)).sum()
+
+        print(outputs.shape, type(outputs))
+        print(outputs)
         # '''
 
         # Monte Carlo estimate of prior posterior and likelihood

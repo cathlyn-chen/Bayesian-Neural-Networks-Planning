@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import torch
+from sklearn.preprocessing import StandardScaler
 
 from ..hparams import reg_hp
 from ..utils.plot import *
@@ -77,38 +77,42 @@ def f_data(hp):
 
 def MoG_data(hp):
     # Different data densities
-    train_low = np.linspace(0.3, 0.9, 30).reshape(-1, 1)
-    train_high = np.linspace(1.5, 2.1, 60).reshape(-1, 1)
+    train_low = np.linspace(0.0, 0.3, 30).reshape(-1, 1)
+    train_high = np.linspace(0.9, 1.5, 60).reshape(-1, 1)
     train_medium = np.linspace(2.4, 3.3, 30).reshape(-1, 1)
 
     train_data = np.concatenate((train_low, train_high, train_medium), axis=0)
 
     train_label = MoG(train_data, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, hp.noise)
 
-    x_test = np.linspace(-0.15, 4.2, 1000).reshape(-1, 1)
+    x_test = np.linspace(-0.3, 4.2, 1000).reshape(-1, 1)
     y_true = MoG(x_test, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, 0)
 
     return train_data, train_label, x_test, y_true
 
 
-def MoG_data_unif(hp):
-    # Different data densities
-    train_data = np.linspace(0.3, 3.3, 150).reshape(-1, 1)
-    train_label = MoG(train_data, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, hp.noise)
+def MoG_data_val(hp):
+    data = np.linspace(0.3, 3.3, hp.train_size + hp.val_size).reshape(-1, 1)
 
-    val_data = np.linspace(0.3, 3.3, 60).reshape(-1, 1)
-    val_label = MoG(val_data, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, hp.noise)
+    np.random.shuffle(data)
+
+    x_train = data[:hp.train_size]
+    x_val = data[hp.train_size:]
+
+    y_train = MoG(x_train, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, hp.noise)
+    y_val = MoG(x_val, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, hp.noise)
 
     x_test = np.linspace(-0.15, 4.2, 1000).reshape(-1, 1)
     y_true = MoG(x_test, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, 0)
 
-    return train_data, train_label, val_data, val_label, x_test, y_true
+    return x_train, y_train, x_val, y_val, x_test, y_true
 
 
 def toy_reg_data(hp):
-    train_low = np.linspace(0.0, 0.15, 15).reshape(-1, 1)
-    train_high = np.linspace(0.3, 0.6, 30).reshape(-1, 1)
-    train_medium = np.linspace(0.9, 1.2, 30).reshape(-1, 1)
+    area_size = int(hp.train_size / 3)
+    train_low = np.linspace(0.0, 0.15, area_size).reshape(-1, 1)
+    train_high = np.linspace(0.3, 0.6, area_size).reshape(-1, 1)
+    train_medium = np.linspace(0.9, 1.2, area_size).reshape(-1, 1)
 
     train_data = np.concatenate((train_low, train_high, train_medium), axis=0)
 
@@ -133,49 +137,3 @@ def paper_reg_data(hp):
     y_true = paper_reg(x_test, 0)
 
     return train_data, train_label, x_test, y_true
-
-
-'''
-def web(net):
-    x = torch.tensor([-2, -1.8, -1, 1, 1.8, 2]).reshape(-1, 1)
-    y = toy_function(x)
-    train_bnn(net, x, y, hp)
-    samples = 100
-    x_tmp = torch.linspace(-5, 5, 100).reshape(-1, 1)
-    y_samp = np.zeros((samples, 100))
-    for s in range(samples):
-        y_tmp = net(x_tmp).detach().numpy()
-        y_samp[s] = y_tmp.reshape(-1)
-
-    plt.plot(x_tmp.numpy(),
-             np.mean(y_samp, axis=0),
-             label='Mean Posterior Predictive')
-    plt.fill_between(x_tmp.numpy().reshape(-1),
-                     np.percentile(y_samp, 2.5, axis=0),
-                     np.percentile(y_samp, 97.5, axis=0),
-                     alpha=0.25,
-                     label='95% Confidence')
-    plt.legend()
-    plt.scatter(x, toy_function(x))
-    plt.title('Posterior Predictive')
-    plt.show()
-
-    samples = 100
-    x_tmp = torch.linspace(-100, 100, 1000).reshape(-1, 1)
-    y_samp = np.zeros((samples, 1000))
-    for s in range(samples):
-        y_tmp = net(x_tmp).detach().numpy()
-        y_samp[s] = y_tmp.reshape(-1)
-    plt.plot(x_tmp.numpy(),
-             np.mean(y_samp, axis=0),
-             label='Mean Posterior Predictive')
-    plt.fill_between(x_tmp.numpy().reshape(-1),
-                     np.percentile(y_samp, 2.5, axis=0),
-                     np.percentile(y_samp, 97.5, axis=0),
-                     alpha=0.25,
-                     label='95% Confidence')
-    plt.legend()
-    plt.scatter(x, toy_function(x))
-    plt.title('Posterior Predictive')
-    plt.show()
-'''

@@ -18,8 +18,21 @@ def initial_plot(train_data, train_label, x_test, y_true):
     plt.show()
 
 
-def pred_plot(train_data, train_label, x_test, y_true, pred_lst, pred_mean,
-              pred_std):
+def pred_plot(train_data, train_label, x_test, y_pred, y_true):
+    plt.scatter(train_data,
+                train_label,
+                marker='+',
+                label='Training data',
+                color='black')
+
+    plt.plot(x_test, y_true, label='Truth', color='grey')
+    plt.plot(x_test, y_pred, c='royalblue', label='Pred')
+    plt.legend()
+    plt.show()
+
+
+def uncertainty_plot(train_data, train_label, x_test, y_true, pred_lst,
+                     pred_mean, pred_std):
     plt.plot(x_test, pred_mean, c='royalblue', label='Mean Pred')
     plt.fill_between(x_test.reshape(-1, ),
                      pred_mean - 3 * pred_std,
@@ -40,8 +53,36 @@ def pred_plot(train_data, train_label, x_test, y_true, pred_lst, pred_mean,
                 color='black',
                 label='Training Data')
     plt.plot(x_test, y_true, color='grey', label='Truth')
+
     plt.legend()
     plt.show()
+
+
+def plot_train_gif(fig, ax, train_data, train_label, predictions, losses,
+                   x_test, y_true, e):
+    plt.cla()
+    ax.set_title('Training Progress', fontsize=21)
+    ax.set_xlabel('Data', fontsize=15)
+    ax.set_ylabel('y', fontsize=15)
+    # ax.set_xlim(-0.9, 2.4)
+    ax.set_ylim(-2.1, 4.2)
+    ax.scatter(train_data, train_label, color="black")
+    ax.plot(x_test, y_true, label='Truth', color='grey')
+    ax.plot(train_data, predictions, c='royalblue')
+    ax.text(0.0, 3.9, 'Epoch = %d' % e, fontdict={'size': 12, 'color': 'red'})
+    ax.text(0.0,
+            3.6,
+            'Loss = %.4f' % np.mean(losses),
+            fontdict={
+                'size': 12,
+                'color': 'red'
+            })
+
+    fig.canvas.draw()  # draw the canvas, cache the renderer
+    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3, ))
+
+    return image
 
 
 def plot_hist(net):
@@ -60,4 +101,9 @@ def plot_hist(net):
     plt.xlabel("Sampled y's")
     plt.ylabel("y values")
     plt.legend()
+    plt.show()
+
+
+def plot_loss(loss):
+    plt.plot(loss)
     plt.show()
