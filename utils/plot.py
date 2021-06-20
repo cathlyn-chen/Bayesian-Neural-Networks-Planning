@@ -31,8 +31,8 @@ def pred_plot(train_data, train_label, x_test, y_pred, y_true):
     plt.show()
 
 
-def uncertainty_plot(train_data, train_label, x_test, y_true, pred_lst,
-                     pred_mean, pred_std):
+def uncertainty_plot(train_data, train_label, x_test, y_true, pred_mean,
+                     pred_std):
     plt.plot(x_test, pred_mean, c='royalblue', label='Mean Pred')
     plt.fill_between(x_test.reshape(-1, ),
                      pred_mean - 3 * pred_std,
@@ -65,13 +65,19 @@ def plot_train_gif(fig, ax, train_data, train_label, predictions, losses,
     ax.set_xlabel('Data', fontsize=15)
     ax.set_ylabel('y', fontsize=15)
     # ax.set_xlim(-0.9, 2.4)
-    ax.set_ylim(-2.1, 4.2)
+    ax.set_ylim(min(train_label) - 0.3, max(train_label) + 0.45)
     ax.scatter(train_data, train_label, color="black")
     ax.plot(x_test, y_true, label='Truth', color='grey')
     ax.plot(train_data, predictions, c='royalblue')
-    ax.text(0.0, 3.9, 'Epoch = %d' % e, fontdict={'size': 12, 'color': 'red'})
     ax.text(0.0,
-            3.6,
+            max(train_label) + 0.3,
+            'Epoch = %d' % e,
+            fontdict={
+                'size': 12,
+                'color': 'red'
+            })
+    ax.text(0.0,
+            max(train_label) + 0.15,
             'Loss = %.4f' % np.mean(losses),
             fontdict={
                 'size': 12,

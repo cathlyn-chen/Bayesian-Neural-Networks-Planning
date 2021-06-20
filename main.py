@@ -105,16 +105,19 @@ def run_nn():
 
 def run_reg():
     hp = reg_hp()
-    train_data, train_label, x_test, y_true = toy_reg_data(hp)
+    # train_data, train_label, x_test, y_true = toy_reg_data(hp)
     # train_data, train_label, x_test, y_true = MoG_data(hp)
     # train_data, train_label, x_test, y_true = paper_reg_data(hp)
     # train_data, train_label, x_test, y_true = f_data(hp)
     # train_data, train_label, x_test, y_true = poly_data(hp)
 
-    # train_data, train_label, val_data, val_label, x_test, y_true = MoG_data_val(
-    #     hp)
+    train_data, train_label, val_data, val_label, x_test, y_true = MoG_data_val(
+        hp)
 
     # initial_plot(train_data, train_label, x_test, y_true)
+
+    scaler, train_data = transform_data(train_data)
+    x_test = scaler.transform(x_test)
 
     train_data = Variable(torch.from_numpy(np.array(train_data)))
     train_label = Variable(torch.from_numpy(np.array(train_label)))
@@ -122,12 +125,15 @@ def run_reg():
     net = BNN(hp)
     train_bnn(net, train_data, train_label, x_test, y_true, hp)
 
-    pred_lst, pred_mean, pred_std = eval_reg(net, x_test)
+    _, pred_mean, pred_std = eval_reg(net, x_test)
+
+    inverse_data(scaler, train_data)
+    inverse_data(scaler, x_test)
 
     # pred_plot(train_data, train_label, x_test, pred_mean, y_true)
 
-    uncertainty_plot(train_data, train_label, x_test, y_true, pred_lst,
-                     pred_mean, pred_std)
+    uncertainty_plot(train_data, train_label, x_test, y_true, pred_mean,
+                     pred_std)
 
     # plot_hist(net)
 

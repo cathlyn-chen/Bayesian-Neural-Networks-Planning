@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from ..hparams import reg_hp
 from ..utils.plot import *
@@ -137,3 +137,15 @@ def paper_reg_data(hp):
     y_true = paper_reg(x_test, 0)
 
     return train_data, train_label, x_test, y_true
+
+
+def transform_data(data):
+    scaler = StandardScaler()
+    # scaler = MinMaxScaler()
+    scaled_data = scaler.fit_transform(data)
+
+    return scaler, scaled_data
+
+
+def inverse_data(scaler, data):
+    scaler.inverse_transform(data)

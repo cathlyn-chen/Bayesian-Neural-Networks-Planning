@@ -81,7 +81,7 @@ class BNN(nn.Module):
         self.hp = hp
         self.input = BNNLayer(hp.n_input, hp.hidden_units, hp)
 
-        # self.hidden = BNNLayer(hp.hidden_units, hp.hidden_units, hp)
+        self.hidden = BNNLayer(hp.hidden_units, hp.hidden_units, hp)
 
         if hp.activation == 'sigmoid':
             self.act = nn.Sigmoid()
@@ -99,7 +99,7 @@ class BNN(nn.Module):
 
     def forward(self, x):
         out = self.act(self.input(x))
-        # out = self.act(self.hidden(out))
+        out = self.act(self.hidden(out))
         out = self.output(out)
         if self.hp.task == 'classification':
             out = self.softmax(out)
@@ -107,11 +107,13 @@ class BNN(nn.Module):
 
     def log_prior(self):
         # Log prior over all the layers
-        return self.input.log_prior + self.output.log_prior
+        # return self.input.log_prior + self.output.log_prior
+        return self.input.log_prior + self.output.log_prior + self.hidden.log_prior
 
     def log_post(self):
         # Log posterior over all the layers
-        return self.input.log_post + self.output.log_post
+        # return self.input.log_post + self.output.log_post
+        return self.input.log_post + self.output.log_post + self.hidden.log_post
 
     def sample_elbo(self, input, target):
         samples = self.hp.n_samples
@@ -146,8 +148,8 @@ class BNN(nn.Module):
             log_likes[i] = Normal(outputs[i], self.noise_tol).log_prob(
                 target.reshape(-1)).sum()
 
-        print(outputs.shape, type(outputs))
-        print(outputs)
+        # print(outputs.shape, type(outputs))
+        # print(outputs)
         # '''
 
         # Monte Carlo estimate of prior posterior and likelihood

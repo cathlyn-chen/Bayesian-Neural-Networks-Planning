@@ -33,11 +33,11 @@ def mnist_hp():
 def reg_hp():
     hp = BBBHparams()
     hp.noise = 0.03
-    hp.n_epochs = 900
+    hp.n_epochs = 9000
 
     hp.n_input = 1
     hp.n_output = 1
-    hp.hidden_units = 15
+    hp.hidden_units = 24
 
     hp.train_size = 90
     hp.val_size = 30
@@ -50,10 +50,10 @@ def reg_hp():
     hp.sigma_prior1 = 6
     hp.sigma_prior2 = 3
     hp.pi = 0.5
-    hp.noise_tol = .1
+    hp.noise_tol = .03
     hp.prior = "gaussian"
     hp.n_samples = 3
-    hp.learning_rate = 0.1
+    hp.learning_rate = 0.01
     hp.task = 'regression'
     hp.activation = 'sigmoid'
 

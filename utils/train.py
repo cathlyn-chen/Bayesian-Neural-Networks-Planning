@@ -54,15 +54,17 @@ def train_bnn(net, train_data, train_label, x_test, y_true, hp):
         if e % 10 == 0:
             print('epoch: {}'.format(e + 1), 'loss', np.mean(losses), 'MSE',
                   mse)
+                  
+            if e > 5400:
+                if hp.plot_progress:
+                    image = plot_train_gif(fig, ax, train_data, train_label,
+                                           predictions, losses, x_test, y_true,
+                                           e)
 
-            if hp.plot_progress:
-                image = plot_train_gif(fig, ax, train_data, train_label,
-                                       predictions, losses, x_test, y_true, e)
-
-                my_images.append(image)
+                    my_images.append(image)
 
     if hp.plot_progress:
-        imageio.mimsave('./train_progress.gif', my_images, fps=6)
+        imageio.mimsave('./train_progress.gif', my_images, fps=9)
 
     if hp.plot_loss:
         plot_loss(loss_lst)
