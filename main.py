@@ -1,19 +1,26 @@
 import torch.optim as optim
 
-from .hparams import reg_hp
+from .hparams import *
 from .utils.train import *
 from .data.regression import *
 from .data.mnist import *
 from .eval.eval_class import *
 from .eval.eval_reg import eval_reg
 
-# from .models.bnn1 import BNN
-from .models.bnn3 import BNN
+from .models.bnn1 import BNN
+# from .models.bnn3 import BNN
 from .models.nn import NN
 from .data.regression import MoG
 
 
-def run1(net, train_data, train_label, test_data, test_label, hp):
+def run1():
+    hp = mnist_hp()
+
+    net = BNN(hp)
+    train_data, train_label, test_data, test_label = get_mnist()
+    # print(len(train_data))
+    hp.n_train_batches = int(len(train_data) / hp.batch_size)
+
     optimizer = optim.Adam(net.parameters())
     losses = []
     for epoch in range(hp.n_epochs):
@@ -24,7 +31,7 @@ def run1(net, train_data, train_label, test_data, test_label, hp):
 
         print('epoch', epoch, 'loss', loss, 'test_acc', acc)
 
-    return losses
+    plot_loss(losses)
 
 
 def run2(net, train_loader, test_loader, hp):
@@ -105,6 +112,7 @@ def run_nn():
 
 def run_reg():
     hp = reg_hp()
+
     # train_data, train_label, x_test, y_true = toy_reg_data(hp)
     # train_data, train_label, x_test, y_true = MoG_data(hp)
     # train_data, train_label, x_test, y_true = paper_reg_data(hp)
@@ -127,19 +135,40 @@ def run_reg():
 
     _, pred_mean, pred_std = eval_reg(net, x_test)
 
-    inverse_data(scaler, train_data)
-    inverse_data(scaler, x_test)
+    # inverse_data(scaler, train_data)
+    # inverse_data(scaler, x_test)
 
     # pred_plot(train_data, train_label, x_test, pred_mean, y_true)
 
+    plt_name = 'mog_unif.png'
+
     uncertainty_plot(train_data, train_label, x_test, y_true, pred_mean,
-                     pred_std)
+                     pred_std, plt_name)
 
     # plot_hist(net)
 
     # web(net)
 
 
+def run_reg_2d():
+    hp = reg_2d_hp()
+
+    y, x_train, y_train = mog_2d_data(hp)
+
+    # initial_plot_contour(y, x_train)
+    # initial_plot_3d(y, x_train, y_train)
+
+    # x_train = Variable(torch.from_numpy(np.array(x_train)))
+    # y_train = Variable(torch.from_numpy(np.array(y_train)))
+
+    net = BNN(hp)
+    print(x_train.shape)
+    train_bnn(net, x_train, y_train, hp)
+
+
 if __name__ == '__main__':
-    run_reg()
+
+    # run_reg()
+    # run_reg_2d()
+    run1()
     # run_nn()

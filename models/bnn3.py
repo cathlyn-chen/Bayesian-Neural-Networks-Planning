@@ -102,7 +102,7 @@ class BNN(nn.Module):
         out = self.act(self.hidden(out))
         out = self.output(out)
         if self.hp.task == 'classification':
-            out = self.softmax(out)
+            out = self.softmax(out, dim=1)
         return out
 
     def log_prior(self):
@@ -136,10 +136,15 @@ class BNN(nn.Module):
 
         # ''' Non-vectorize
         # Initialize tensors
+        print(target.shape[0])
+
         outputs = torch.zeros(samples, target.shape[0])
         log_priors = torch.zeros(samples)
         log_posts = torch.zeros(samples)
         log_likes = torch.zeros(samples)
+
+        print(input.shape, target.shape)
+        print(self(input).shape)
 
         for i in range(samples):
             outputs[i] = self(input).reshape(-1)  # make predictions

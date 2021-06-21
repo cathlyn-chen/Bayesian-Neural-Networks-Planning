@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import multivariate_normal
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from ..hparams import reg_hp
@@ -50,6 +51,12 @@ def toy_function(X):
 def poly(X, sigma):
     epsilon = np.random.randn(*X.shape) * sigma
     return 2 * (X + epsilon)**2 + 2
+
+
+def multi_normal(x, hp):
+    x_m = x - hp.mean
+    return (1. / (np.sqrt((2 * np.pi)**2 * np.linalg.det(hp.covariance))) *
+            np.exp(-(np.linalg.solve(hp.covariance, x_m).T.dot(x_m)) / 2))
 
 
 ''' Data for regression from ground truth '''
@@ -137,6 +144,68 @@ def paper_reg_data(hp):
     y_true = paper_reg(x_test, 0)
 
     return train_data, train_label, x_test, y_true
+
+
+def ncp_data(hp):
+    rng = np.random.RandomState(123)
+
+    def f(x):
+        """Sinusoidal function."""
+        return 0.5 * np.sin(25 * x) + 0.5 * x
+
+    def noise(x, slope, rng=np.random):
+        """Create heteroskedastic noise."""
+        noise_std = np.maximum(0.0, x + 1.0) * slope
+        return rng.normal(0, noise_std).astype(np.float32)
+
+    def select_bands(x, y, mask):
+        assert x.shape[0] == y.shape[0]
+
+        num_bands = len(mask)
+
+        if x.shape[0] % num_bands != 0:
+            raise ValueError(
+                'size of first dimension must be a multiple of mask length')
+
+        data_mask = np.repeat(mask, x.shape[0] // num_bands)
+        return [arr[data_mask] for arr in (x, y)]
+
+    def select_subset(x, y, num, rng=np.random):
+        assert x.shape[0] == y.shape[0]
+
+        choices = rng.choice(range(x.shape[0]), num, replace=False)
+        return [x[choices] for x in (x, y)]
+
+    x = np.linspace(-1.0, 1.0, 1000, dtype=np.float32).reshape(-1, 1)
+
+    # Noisy samples from f (with heteroskedastic noise)
+    y = f(x) + noise(x, slope=0.2, rng=rng)
+
+    # Select data from 2 of 5 bands (regions)
+    x_bands, y_bands = select_bands(x,
+                                    y,
+                                    mask=[False, True, False, True, False])
+
+    # Select 40 random samples from these regions
+    x_train, y_train = select_subset(x_bands,
+                                     y_bands,
+                                     num=hp.train_size,
+                                     rng=rng)
+
+    return x_train, y_train, x, f(x)
+
+
+
+def mog_2d_data(hp):
+    y = multivariate_normal(hp.mean, hp.covariance)
+
+    x_train = multivariate_normal.rvs(hp.mean,
+                                      hp.covariance,
+                                      size=hp.train_size)
+
+    y_train = np.array([multi_normal(x, hp) for x in x_train])
+
+    return y, x_train, y_train
 
 
 def transform_data(data):

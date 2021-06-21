@@ -23,7 +23,7 @@ def load_mnist(hp):
 
 
 def get_mnist():
-    train = datasets.MNIST(root="./data",
+    train = datasets.MNIST(root="./D3M/data/MNIST",
                            train=True,
                            download=True,
                            transform=transforms.ToTensor())
@@ -51,6 +51,7 @@ def get_mnist():
     return train_data, train_label_one_hot, test_data, test_label_one_hot
 
 
+'''
 if __name__ == '__main__':
     hp = mnist_hp()
     # train_loader, test_loader = load_mnist(hp)
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     # hp.num_batch = len(train_loader)
     # hp.test_batch = len(test_loader)
 
-    # net = BayesianNetwork(784, 10, 30, hp).to(hp.device)
+    # net = BNN(784, 10, 30, hp).to(hp.device)
     # run(net, train_loader, test_loader, hp)
 
     # torch.save(net.state_dict(), '/model')
@@ -70,3 +71,4 @@ if __name__ == '__main__':
 
     # run_new(net, train_data, train_label_one_hot, test_data,
     #         test_label_one_hot, hp)
+'''

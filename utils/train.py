@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import imageio
 
 
-def train_bnn(net, train_data, train_label, x_test, y_true, hp):
+def train_bnn(net, train_data, train_label, hp):
     optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
 
     if hp.plot_progress:
@@ -26,14 +26,15 @@ def train_bnn(net, train_data, train_label, x_test, y_true, hp):
         for b in range(hp.n_train_batches):
             net.zero_grad()
             X = Variable(
-                torch.from_numpy(
-                    np.array(train_data[b * hp.batch_size:(b + 1) *
-                                        hp.batch_size])).float().reshape(
-                                            -1, 1))
+                torch.Tensor(train_data[b * hp.batch_size:(b + 1) *
+                                        hp.batch_size]).float().reshape(-1, 1))
             y = Variable(
                 torch.from_numpy(
                     np.array(train_label[b * hp.batch_size:(b + 1) *
                                          hp.batch_size])).float())
+
+            print(X.shape)
+
             loss = net.sample_elbo(X, y)
 
             losses.append(loss.data.numpy())
@@ -54,12 +55,11 @@ def train_bnn(net, train_data, train_label, x_test, y_true, hp):
         if e % 10 == 0:
             print('epoch: {}'.format(e + 1), 'loss', np.mean(losses), 'MSE',
                   mse)
-                  
+
             if e > 5400:
                 if hp.plot_progress:
                     image = plot_train_gif(fig, ax, train_data, train_label,
-                                           predictions, losses, x_test, y_true,
-                                           e)
+                                           predictions, losses, e)
 
                     my_images.append(image)
 
@@ -89,7 +89,7 @@ def train_nn(net, train_data, train_label, hp):
 
 def train1(net, optimizer, train_data, train_label, hp):
     losses = []
-    for b in range(hp.num_batch):
+    for b in range(hp.n_train_batches):
         net.zero_grad()
 
         # Obtain minibatch
