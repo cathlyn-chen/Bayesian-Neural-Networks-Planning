@@ -22,18 +22,15 @@ def train_bnn(net, train_data, train_label, hp):
 
     for e in range(hp.n_epochs):
         losses = []
-
         for b in range(hp.n_train_batches):
             net.zero_grad()
             X = Variable(
                 torch.Tensor(train_data[b * hp.batch_size:(b + 1) *
-                                        hp.batch_size]).float().reshape(-1, 1))
+                                        hp.batch_size]).float())
             y = Variable(
                 torch.from_numpy(
                     np.array(train_label[b * hp.batch_size:(b + 1) *
                                          hp.batch_size])).float())
-
-            print(X.shape)
 
             loss = net.sample_elbo(X, y)
 

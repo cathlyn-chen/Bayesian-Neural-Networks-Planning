@@ -131,7 +131,7 @@ def run_reg():
     train_label = Variable(torch.from_numpy(np.array(train_label)))
 
     net = BNN(hp)
-    train_bnn(net, train_data, train_label, x_test, y_true, hp)
+    train_bnn(net, train_data, train_label, hp)
 
     _, pred_mean, pred_std = eval_reg(net, x_test)
 
@@ -153,10 +153,10 @@ def run_reg():
 def run_reg_2d():
     hp = reg_2d_hp()
 
-    y, x_train, y_train = mog_2d_data(hp)
+    x_train, y_train, x_test, y_true = mog_2d_data(hp)
 
-    # initial_plot_contour(y, x_train)
-    # initial_plot_3d(y, x_train, y_train)
+    # initial_plot_contour(x_train, y_true)
+    # initial_plot_3d(x_train, y_train, y_true)
 
     # x_train = Variable(torch.from_numpy(np.array(x_train)))
     # y_train = Variable(torch.from_numpy(np.array(y_train)))
@@ -165,10 +165,14 @@ def run_reg_2d():
     print(x_train.shape)
     train_bnn(net, x_train, y_train, hp)
 
+    y_pred = (net((torch.tensor(x_train)).float())).detach().numpy()
+
+    initial_plot_3d(x_train, y_pred, y_true)
+
 
 if __name__ == '__main__':
 
     # run_reg()
-    # run_reg_2d()
-    run1()
+    run_reg_2d()
+    # run1()
     # run_nn()

@@ -102,7 +102,7 @@ class BNN(nn.Module):
         out = self.act(self.hidden(out))
         out = self.output(out)
         if self.hp.task == 'classification':
-            out = self.softmax(out, dim=1)
+            out = self.softmax(out)
         return out
 
     def log_prior(self):
@@ -136,22 +136,27 @@ class BNN(nn.Module):
 
         # ''' Non-vectorize
         # Initialize tensors
-        print(target.shape[0])
 
         outputs = torch.zeros(samples, target.shape[0])
         log_priors = torch.zeros(samples)
         log_posts = torch.zeros(samples)
-        log_likes = torch.zeros(samples)
+        if self.hp.task == 'regression':
+            log_likes = torch.zeros(samples)
 
-        print(input.shape, target.shape)
-        print(self(input).shape)
+        # print(input.shape, target.shape)
+        # print(self(input).shape)
 
         for i in range(samples):
-            outputs[i] = self(input).reshape(-1)  # make predictions
+            outputs[i] = self(input)
             log_priors[i] = self.log_prior()
             log_posts[i] = self.log_post()
-            log_likes[i] = Normal(outputs[i], self.noise_tol).log_prob(
-                target.reshape(-1)).sum()
+
+            if self.hp.task == 'regression':
+                log_likes[i] = Normal(outputs[i], self.noise_tol).log_prob(
+                    target.reshape(-1)).sum()
+
+        if self.hp.task == 'classification':
+            log_likes = F.nll_loss(outputs.mean(0), target, reduction='sum')
 
         # print(outputs.shape, type(outputs))
         # print(outputs)

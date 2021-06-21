@@ -20,10 +20,12 @@ def initial_plot(train_data, train_label, x_test, y_true):
 
 
 def plot_3d():
-    n_grid = 30
-    x1s = np.linspace(-3, 3.6, n_grid)
-    x2s = np.linspace(-2.4, 3.6, n_grid)
-    x1, x2 = np.meshgrid(x1s, x2s)
+    # n_grid = 30
+    # x1s = np.linspace(-3, 3.6, n_grid)
+    # x2s = np.linspace(-2.4, 3.6, n_grid)
+    # x1, x2 = np.meshgrid(x1s, x2s)
+
+    x1, x2 = np.mgrid[-3:3.6:0.3, -2.4:3.6:0.3]
 
     pos = np.empty(x1.shape + (2, ))
     pos[:, :, 0] = x1
@@ -32,7 +34,7 @@ def plot_3d():
     return x1, x2, pos
 
 
-def initial_plot_contour(y, x_train):
+def initial_plot_contour(x_train, y):
     x1, x2, pos = plot_3d()
 
     fig, ax = plt.subplots()
@@ -47,7 +49,7 @@ def initial_plot_contour(y, x_train):
     plt.show()
 
 
-def initial_plot_3d(y, x_train, y_train):
+def initial_plot_3d(x_train, y_train, y):
     x1, x2, pos = plot_3d()
 
     fig = plt.figure()

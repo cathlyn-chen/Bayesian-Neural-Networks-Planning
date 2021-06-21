@@ -1,14 +1,9 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from ..hparams import reg_hp
 from ..utils.plot import *
-
-# from ..models.bnn1 import BNN
-# from ..models.bnn2 import BNN
-from ..models.bnn3 import BNN
 
 np.random.seed(3)
 ''' Ground truth functions for regression '''
@@ -195,9 +190,7 @@ def ncp_data(hp):
     return x_train, y_train, x, f(x)
 
 
-
 def mog_2d_data(hp):
-    y = multivariate_normal(hp.mean, hp.covariance)
 
     x_train = multivariate_normal.rvs(hp.mean,
                                       hp.covariance,
@@ -205,7 +198,11 @@ def mog_2d_data(hp):
 
     y_train = np.array([multi_normal(x, hp) for x in x_train])
 
-    return y, x_train, y_train
+    x_test = np.mgrid[-3:3.6:0.3, -2.4:3.6:0.3].reshape(2, -1).T
+
+    y_true = multivariate_normal(hp.mean, hp.covariance)
+
+    return x_train, y_train, x_test, y_true
 
 
 def transform_data(data):

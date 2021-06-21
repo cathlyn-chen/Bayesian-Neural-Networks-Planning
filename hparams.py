@@ -80,8 +80,10 @@ def reg_hp():
 
 def reg_2d_hp():
     hp = reg_hp()
+    hp.n_epochs = 6000
 
     hp.n_input = 2
+    hp.sigma_prior1 = 1
 
     hp.mean = np.array([0., 1.])
     hp.covariance = np.array([[1, 0.8], [0.8, 1]])
