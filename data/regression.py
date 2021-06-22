@@ -54,6 +54,14 @@ def multi_normal(x, hp):
             np.exp(-(np.linalg.solve(hp.covariance, x_m).T.dot(x_m)) / 2))
 
 
+def poly_2d(x, sigma):
+    # e1 = np.random.randn() * sigma
+    # e2 = np.random.randn() * sigma
+    x1, x2 = x
+    # return -(x1 + e1)**2 - (x1 + e1) + (x2 + e2)**2
+    return -x1**2 - x1 + x2**2
+
+
 ''' Data for regression from ground truth '''
 
 
@@ -190,17 +198,44 @@ def ncp_data(hp):
     return x_train, y_train, x, f(x)
 
 
-def mog_2d_data(hp):
-
+def gaussian_data_2d(hp):
     x_train = multivariate_normal.rvs(hp.mean,
                                       hp.covariance,
                                       size=hp.train_size)
 
     y_train = np.array([multi_normal(x, hp) for x in x_train])
 
-    x_test = np.mgrid[-3:3.6:0.3, -2.4:3.6:0.3].reshape(2, -1).T
+    # x_test = np.mgrid[-3:3.6:0.3, -2.4:3.6:0.3].reshape(2, -1).T
 
-    y_true = multivariate_normal(hp.mean, hp.covariance)
+    x_test = hp.grid.reshape(2, -1).T
+
+    y_true = np.array([multi_normal(x, hp) for x in x_test])
+
+    # y_true = multivariate_normal(hp.mean, hp.covariance)
+
+    # x1, x2 = hp.grid
+    # pos = np.empty(x1.shape + (2, ))
+    # pos[:, :, 0] = x1
+    # pos[:, :, 1] = x2
+
+    # y_true = y_true.pdf(pos)
+
+    return x_train, y_train, x_test, y_true
+
+
+def poly_data_2d(hp):
+
+    data = hp.grid.reshape(2, -1).T
+    np.random.shuffle(data)
+    # print(data.shape)
+
+    x_train = data[:hp.train_size]
+
+    y_train = np.array([poly_2d(x, hp.noise) for x in x_train])
+
+    x_test = hp.grid.reshape(2, -1).T
+    y_true = np.array([poly_2d(x, 0) for x in x_test])
+    # print(y_true.shape)
 
     return x_train, y_train, x_test, y_true
 
@@ -214,4 +249,5 @@ def transform_data(data):
 
 
 def inverse_data(scaler, data):
-    scaler.inverse_transform(data)
+    ori_data = scaler.inverse_transform(data)
+    return ori_data

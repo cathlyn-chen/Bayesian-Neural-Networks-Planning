@@ -14,6 +14,6 @@ class NN(nn.Module):
         # nn.init.zeros_(self.output.bias)
 
     def forward(self, x):
-        out = F.sigmoid(self.input(x))
+        out = F.relu(self.input(x))
         out = self.output(out)
         return out

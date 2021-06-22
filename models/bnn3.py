@@ -49,9 +49,10 @@ class BNNLayer(nn.Module):
         elif hp.prior == 'ncp':
             pass
 
+    # '''
     def forward(self, input):
         # Sample weights
-        w_epsilon = Normal(0, 1).sample(self.w_mu.shape)
+        w_epsilon = Normal(0, 1).sample(self.w_mu.shape)  #(N, H)
         self.w = self.w_mu + torch.log(1 + torch.exp(self.w_rho)) * w_epsilon
 
         # Sample bias
@@ -72,6 +73,38 @@ class BNNLayer(nn.Module):
             self.w).sum() + self.b_post.log_prob(self.b).sum()
 
         return F.linear(input, self.w, self.b)
+
+    # '''
+    '''
+    def forward(self, input):
+        N = self.hp.n_samples
+
+        # Sample weights
+        w_epsilon = Normal(0, 1).sample(N, self.w_mu.shape)  #(N, H)
+        self.w = self.w_mu + torch.log(
+            1 + torch.exp(self.w_rho)) * w_epsilon  #(N, H)
+
+        # Sample bias
+        b_epsilon = Normal(0, 1).sample(N, self.b_mu.shape)  #(N, H)
+        self.b = self.b_mu + torch.log(1 + torch.exp(self.b_rho)) * b_epsilon
+
+        # Log prior - evaluating log pdf of prior at sampled weight and bias
+        w_log_prior = self.prior.log_prob(self.w)
+        b_log_prior = self.prior.log_prob(self.b)
+        self.log_prior = torch.sum(w_log_prior, axis=1) + torch.sum(
+            b_log_prior, axis=1)  #(N, 1)
+
+        # Log variational posterior - evaluating log pdf of normal distribution defined by parameters with respect at the sampled values
+        self.w_post = Normal(self.w_mu.data,
+                             torch.log(1 + torch.exp(self.w_rho)))
+        self.b_post = Normal(self.b_mu.data,
+                             torch.log(1 + torch.exp(self.b_rho)))
+        self.log_post = self.w_post.log_prob(
+            self.w).sum(axis=1) + self.b_post.log_prob(self.b).sum(axis=1)
+
+        return F.linear(input, self.w, self.b)
+
+    '''
 
 
 class BNN(nn.Module):
@@ -133,8 +166,7 @@ class BNN(nn.Module):
         ],
                                  requires_grad=True)
         '''
-
-        # ''' Non-vectorize
+        # ''' For Loop
         # Initialize tensors
 
         outputs = torch.zeros(samples, target.shape[0])
@@ -161,6 +193,13 @@ class BNN(nn.Module):
         # print(outputs.shape, type(outputs))
         # print(outputs)
         # '''
+        '''
+        outputs = self(input)
+        log_priors = self.log_prior()
+        log_posts = self.log_post()
+        log_likes = Normal(outputs, self.noise_tol).log_prob(
+            target.reshape(-1)).sum(axis=1)
+        '''
 
         # Monte Carlo estimate of prior posterior and likelihood
         log_prior = log_priors.mean()

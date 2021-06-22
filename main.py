@@ -1,4 +1,5 @@
 import torch.optim as optim
+from torch.distributions import Normal
 
 from .hparams import *
 from .utils.train import *
@@ -127,13 +128,13 @@ def run_reg():
     scaler, train_data = transform_data(train_data)
     x_test = scaler.transform(x_test)
 
-    train_data = Variable(torch.from_numpy(np.array(train_data)))
-    train_label = Variable(torch.from_numpy(np.array(train_label)))
+    train_data = Variable(torch.from_numpy(np.array(train_data)).float())
+    train_label = Variable(torch.from_numpy(np.array(train_label)).float())
 
     net = BNN(hp)
-    train_bnn(net, train_data, train_label, hp)
+    losses, mses = train_bnn(net, train_data, train_label, x_test, y_true, hp)
 
-    _, pred_mean, pred_std = eval_reg(net, x_test)
+    _, pred_mean, pred_std = eval_reg(net, x_test, hp.pred_samples)
 
     # inverse_data(scaler, train_data)
     # inverse_data(scaler, x_test)
@@ -145,7 +146,7 @@ def run_reg():
     uncertainty_plot(train_data, train_label, x_test, y_true, pred_mean,
                      pred_std, plt_name)
 
-    # plot_hist(net)
+    plot_hist(net)
 
     # web(net)
 
@@ -153,26 +154,66 @@ def run_reg():
 def run_reg_2d():
     hp = reg_2d_hp()
 
-    x_train, y_train, x_test, y_true = mog_2d_data(hp)
+    x_train, y_train, x_test, y_true = gaussian_data_2d(hp)
 
-    # initial_plot_contour(x_train, y_true)
-    # initial_plot_3d(x_train, y_train, y_true)
+    # x_train, y_train, x_test, y_true = poly_data_2d(hp)
 
-    # x_train = Variable(torch.from_numpy(np.array(x_train)))
-    # y_train = Variable(torch.from_numpy(np.array(y_train)))
+    # init_plot_contour(x_train, y_true, hp)
+    # init_plot_3d(x_test, y_true, y_true, hp)
+    init_plot_3d(x_train, y_train, y_true, hp)
+
+    x_train = Variable(torch.Tensor(x_train))
+    y_train = Variable(torch.Tensor(y_train))
 
     net = BNN(hp)
-    print(x_train.shape)
-    train_bnn(net, x_train, y_train, hp)
 
-    y_pred = (net((torch.tensor(x_train)).float())).detach().numpy()
+    # Standardize
+    scaler_x, x_train = transform_data(x_train)
+    scaler_y, y_train = transform_data(y_train.reshape(-1, 1))
 
-    initial_plot_3d(x_train, y_pred, y_true)
+    x_test = scaler_x.transform(x_test)
+    y_true = scaler_y.transform(y_true.reshape(-1, 1))
+
+    losses, mses = train_bnn(net, x_train, y_train, x_test, y_true, hp)
+
+    # y_pred = (net((torch.tensor(x_train)).float())).detach().numpy()
+
+    _, y_pred, pred_std = eval_reg(net, x_test, hp.pred_samples)
+    # print(pred_std.shape)
+
+    # Back to original data
+    x_train = inverse_data(scaler_x, x_train)
+    x_test = inverse_data(scaler_x, x_test)
+    y_train = inverse_data(scaler_y, y_train)
+    y_true = inverse_data(scaler_y, y_true)
+
+    # Uncertainty contour plot
+    uncertainty_plot_contour(x_train, pred_std, hp)
+
+    # Prediction plot
+    pred_plot_3d(x_train, y_train, x_test, y_pred, y_true, hp)
+
+
+def run_nn_2d():
+    hp = reg_2d_hp()
+    net = NN(hp)
+    x_train, y_train, x_test, y_true = gaussian_data_2d(hp)
+
+    x_train = Variable(torch.Tensor(x_train)).float()
+    y_train = Variable(torch.Tensor(y_train)).float()
+
+    train_nn(net, x_train, y_train, hp)
+    y_pred = (net((torch.Tensor(x_test)).float())).detach().numpy()
+
+    # init_plot_3d(x_test, y_pred, y_true, hp)
+    pred_plot_3d(x_train, y_train, x_test, y_pred, y_true, hp)
 
 
 if __name__ == '__main__':
+    # run1()
 
     # run_reg()
-    run_reg_2d()
-    # run1()
     # run_nn()
+
+    run_reg_2d()
+    # run_nn_2d()

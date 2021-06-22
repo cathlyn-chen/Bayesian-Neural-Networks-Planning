@@ -7,7 +7,6 @@ class BBBHparams(object):
     def __init__(self) -> None:
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
-        self.n_epochs = 10
 
 
 def mnist_hp():
@@ -41,7 +40,7 @@ def mnist_hp():
 def reg_hp():
     hp = BBBHparams()
     hp.noise = 0.03
-    hp.n_epochs = 9000
+    hp.n_epochs = 3000
 
     hp.n_input = 1
     hp.n_output = 1
@@ -52,6 +51,9 @@ def reg_hp():
     hp.test_size = 30
     hp.n_train_batches = 3
     hp.batch_size = int(hp.train_size / hp.n_train_batches)
+
+    hp.pred_samples = 1000
+    hp.eval_samples = 10
 
     # hp.sigma_prior1 = torch.FloatTensor([math.exp(-0)])
     # hp.sigma_prior2 = torch.FloatTensor([math.exp(-6)])
@@ -80,13 +82,20 @@ def reg_hp():
 
 def reg_2d_hp():
     hp = reg_hp()
-    hp.n_epochs = 6000
+    hp.n_epochs = 60
+    hp.learning_rate = 0.01
 
     hp.n_input = 2
-    hp.sigma_prior1 = 1
+    hp.hidden_units = 15
+
+    hp.sigma_prior1 = 6
+
+    hp.prior = "gaussian"
 
     hp.mean = np.array([0., 1.])
     hp.covariance = np.array([[1, 0.8], [0.8, 1]])
+    hp.grid = np.mgrid[-3:3.6:0.3, -2.4:3.6:0.3]
+
     return hp
 
 

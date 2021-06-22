@@ -34,27 +34,73 @@ def plot_3d():
     return x1, x2, pos
 
 
-def initial_plot_contour(x_train, y):
-    x1, x2, pos = plot_3d()
+def init_plot_contour(x_train, y_true, hp):
+    # x1, x2, pos = plot_3d()
+    x1, x2 = hp.grid
 
     fig, ax = plt.subplots()
 
-    con = ax.contourf(x1, x2, y.pdf(pos))
+    # Truth
+    con = ax.contourf(x1, x2, y_true.reshape(x1.shape), cmap='viridis')
 
-    ax.scatter(x_train[:, 0], x_train[:, 1], marker='+', c='black', alpha=.6)
-    ax.set_aspect('equal')
-    ax.set_title('Samples from bivariate normal distribution')
+    # Sampled data points
+    ax.scatter(x_train[:, 0],
+               x_train[:, 1],
+               marker='+',
+               color='black',
+               alpha=.6)
+
+    # Colour bar
     cbar = plt.colorbar(con)
-    cbar.ax.set_ylabel('Density', fontsize=12)
+    cbar.ax.set_ylabel('y value', fontsize=9)
+
+    ax.set_aspect('equal')
+    # ax.set_title('Samples from bivariate normal distribution')
+
     plt.show()
 
 
-def initial_plot_3d(x_train, y_train, y):
-    x1, x2, pos = plot_3d()
+def uncertainty_plot_contour(x_train, std, hp):
+    # x1, x2, pos = plot_3d()
+    x1, x2 = hp.grid
+
+    fig, ax = plt.subplots()
+
+    # Truth
+    con = ax.contourf(x1, x2, std.reshape(x1.shape), cmap='cividis')
+
+    # Sampled data points
+    ax.scatter(x_train[:, 0],
+               x_train[:, 1],
+               color='black',
+               marker='+',
+               alpha=.6)
+
+    # Colour bar for uncertainty
+    cbar = plt.colorbar(con)
+    cbar.ax.set_ylabel('Uncertainty (+/- 3 std)', fontsize=9)
+
+    ax.set_aspect('equal')
+    # ax.set_title('Samples from bivariate normal distribution')
+
+    plt.show()
+
+
+def init_plot_3d(x_train, y_train, y_true, hp):
+    x1, x2 = hp.grid
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    ax.plot_surface(x1, x2, y.pdf(pos), cmap='viridis', linewidth=0)
+
+    # Truth
+    ax.plot_surface(x1,
+                    x2,
+                    y_true.reshape(x1.shape),
+                    linewidth=0,
+                    color='grey',
+                    alpha=0.3)
+
+    # Sampled data points
     ax.scatter(x_train[:, 0],
                x_train[:, 1],
                y_train,
@@ -65,6 +111,44 @@ def initial_plot_3d(x_train, y_train, y):
     ax.set_xlabel('x1')
     ax.set_ylabel('x2')
     ax.set_zlabel('y')
+
+    plt.show()
+
+
+def pred_plot_3d(x_train, y_train, x_test, y_pred, y_true, hp):
+    x1, x2 = hp.grid
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    # Truth
+    ax.plot_surface(x1,
+                    x2,
+                    y_true.reshape(x1.shape),
+                    color='grey',
+                    linewidth=0,
+                    alpha=0.3)
+    # cmap='viridis'
+
+    # Pred plot
+    ax.plot_surface(x1,
+                    x2,
+                    np.array(y_pred).reshape((x1.shape)),
+                    color='cornflowerblue',
+                    alpha=0.6)
+
+    # Sampled data points
+    ax.scatter(x_train[:, 0],
+               x_train[:, 1],
+               y_train,
+               marker='x',
+               c='black',
+               alpha=.6)
+
+    ax.set_xlabel('x1')
+    ax.set_ylabel('x2')
+    ax.set_zlabel('y')
+
     plt.show()
 
 

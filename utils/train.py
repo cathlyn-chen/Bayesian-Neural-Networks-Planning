@@ -1,4 +1,4 @@
-from ..eval.eval_reg import eval_reg
+from ..eval.eval_reg import eval_like, eval_mse, eval_reg
 import numpy as np
 import torch
 import torch.nn as nn
@@ -10,52 +10,58 @@ import matplotlib.pyplot as plt
 import imageio
 
 
-def train_bnn(net, train_data, train_label, hp):
+def train_bnn(net, x_train, y_train, x_test, y_true, hp):
     optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
 
+    # Plot training progress gif
     if hp.plot_progress:
         my_images = []
         fig, ax = plt.subplots()
 
     loss_lst = []
     mse_lst = []
+    like_lst = []
 
     for e in range(hp.n_epochs):
         losses = []
+
+        # Minibathces
         for b in range(hp.n_train_batches):
             net.zero_grad()
             X = Variable(
-                torch.Tensor(train_data[b * hp.batch_size:(b + 1) *
-                                        hp.batch_size]).float())
+                torch.Tensor(x_train[b * hp.batch_size:(b + 1) *
+                                     hp.batch_size]).float())
             y = Variable(
-                torch.from_numpy(
-                    np.array(train_label[b * hp.batch_size:(b + 1) *
-                                         hp.batch_size])).float())
+                torch.Tensor(y_train[b * hp.batch_size:(b + 1) *
+                                     hp.batch_size])).float()
 
             loss = net.sample_elbo(X, y)
-
             losses.append(loss.data.numpy())
+
             loss.backward()
             optimizer.step()
 
+        # Evaluation
         with torch.no_grad():
             predictions = net(torch.from_numpy(
-                np.array(train_data)).float()).data.numpy()
+                np.array(x_train)).float()).data.numpy()
 
-            mse = (np.square(predictions - np.array(train_label))).mean()
+            # _, predictions, _, = eval_reg(net, x_test, hp.seval_samples)
 
-        # _, pred_test, _, = eval_reg(net, x_test)
+            mse = eval_mse(predictions, y_train)
+            # like = eval_like(net, x_test, y_true, hp)
 
         loss_lst.append(np.mean(losses))
         mse_lst.append(mse)
+        # like_lst.append(sum(like))
 
         if e % 10 == 0:
             print('epoch: {}'.format(e + 1), 'loss', np.mean(losses), 'MSE',
-                  mse)
+                  mse)#, 'likelihood', sum(like))
 
             if e > 5400:
                 if hp.plot_progress:
-                    image = plot_train_gif(fig, ax, train_data, train_label,
+                    image = plot_train_gif(fig, ax, x_train, y_train,
                                            predictions, losses, e)
 
                     my_images.append(image)
@@ -63,21 +69,24 @@ def train_bnn(net, train_data, train_label, hp):
     if hp.plot_progress:
         imageio.mimsave('./train_progress.gif', my_images, fps=9)
 
-    if hp.plot_loss:
-        plot_loss(loss_lst)
+    # plot_loss(like)
 
     print('Finished Training')
+
+    return loss_lst, mse_lst
 
 
 def train_nn(net, train_data, train_label, hp):
     criterion = nn.MSELoss()
-
     optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
 
     for epoch in range(hp.n_epochs):
         optimizer.zero_grad()
         output = net(train_data)
-        loss = criterion(output, train_label)
+        loss = criterion(output, train_label.reshape(-1, 1))
+
+        # print(train_label.shape)
+
         if epoch % 10 == 0:
             print("epoch {} MSE: {}".format(epoch, loss))
         loss.backward()
