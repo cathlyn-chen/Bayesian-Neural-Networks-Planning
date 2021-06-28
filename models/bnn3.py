@@ -52,7 +52,7 @@ class BNNLayer(nn.Module):
     # '''
     def forward(self, input):
         # Sample weights
-        w_epsilon = Normal(0, 1).sample(self.w_mu.shape)  #(N, H)
+        w_epsilon = Normal(0, 1).sample(self.w_mu.shape)
         self.w = self.w_mu + torch.log(1 + torch.exp(self.w_rho)) * w_epsilon
 
         # Sample bias
@@ -72,7 +72,9 @@ class BNNLayer(nn.Module):
         self.log_post = self.w_post.log_prob(
             self.w).sum() + self.b_post.log_prob(self.b).sum()
 
-        return F.linear(input, self.w, self.b)
+        forward = F.linear(input, self.w, self.b)
+        # print(forward.shape)
+        return forward
 
     # '''
     '''
@@ -80,12 +82,13 @@ class BNNLayer(nn.Module):
         N = self.hp.n_samples
 
         # Sample weights
-        w_epsilon = Normal(0, 1).sample(N, self.w_mu.shape)  #(N, H)
+        w_epsilon = [Normal(0, 1).sample(self.w_mu.shape) for _ in range(N)]  #(N, (H, I))
         self.w = self.w_mu + torch.log(
-            1 + torch.exp(self.w_rho)) * w_epsilon  #(N, H)
+            1 + torch.exp(self.w_rho)) * w_epsilon  #(N, (H, I))
 
         # Sample bias
-        b_epsilon = Normal(0, 1).sample(N, self.b_mu.shape)  #(N, H)
+        b_epsilon = [Normal(0, 1).sample(self.b_mu.shape)
+                     for _ in range(N)]  #(N, (H, I))
         self.b = self.b_mu + torch.log(1 + torch.exp(self.b_rho)) * b_epsilon
 
         # Log prior - evaluating log pdf of prior at sampled weight and bias
@@ -103,7 +106,6 @@ class BNNLayer(nn.Module):
             self.w).sum(axis=1) + self.b_post.log_prob(self.b).sum(axis=1)
 
         return F.linear(input, self.w, self.b)
-
     '''
 
 
@@ -170,6 +172,8 @@ class BNN(nn.Module):
         # Initialize tensors
 
         outputs = torch.zeros(samples, target.shape[0])
+        # print(target.shape)
+        # print(outputs.shape)
         log_priors = torch.zeros(samples)
         log_posts = torch.zeros(samples)
         if self.hp.task == 'regression':
@@ -179,7 +183,8 @@ class BNN(nn.Module):
         # print(self(input).shape)
 
         for i in range(samples):
-            outputs[i] = self(input)
+            # print(input.shape, self(input).shape)
+            outputs[i] = self(input).squeeze(1)
             log_priors[i] = self.log_prior()
             log_posts[i] = self.log_post()
 

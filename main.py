@@ -8,8 +8,8 @@ from .data.mnist import *
 from .eval.eval_class import *
 from .eval.eval_reg import eval_reg
 
-from .models.bnn1 import BNN
-# from .models.bnn3 import BNN
+# from .models.bnn1 import BNN
+from .models.bnn3 import BNN
 from .models.nn import NN
 from .data.regression import MoG
 
@@ -126,27 +126,28 @@ def run_reg():
     # initial_plot(train_data, train_label, x_test, y_true)
 
     scaler, train_data = transform_data(train_data)
-    x_test = scaler.transform(x_test)
+    x_test = scaler.transform(x_test).reshape(-1, 1)
 
-    train_data = Variable(torch.from_numpy(np.array(train_data)).float())
-    train_label = Variable(torch.from_numpy(np.array(train_label)).float())
+    # train_data = Variable(torch.from_numpy(np.array(train_data)).float())
+    # train_label = Variable(torch.from_numpy(np.array(train_label)).float())
 
     net = BNN(hp)
     losses, mses = train_bnn(net, train_data, train_label, x_test, y_true, hp)
 
     _, pred_mean, pred_std = eval_reg(net, x_test, hp.pred_samples)
 
-    # inverse_data(scaler, train_data)
-    # inverse_data(scaler, x_test)
+    # train_data = inverse_data(scaler, train_data)
+    # x_test = inverse_data(scaler, x_test)
 
-    # pred_plot(train_data, train_label, x_test, pred_mean, y_true)
+    # pred_plot(train_data, train_label, x_test, pred_mean.reshape(-1, 1),
+    #           y_true)
 
     plt_name = 'mog_unif.png'
 
     uncertainty_plot(train_data, train_label, x_test, y_true, pred_mean,
                      pred_std, plt_name)
 
-    plot_hist(net)
+    # plot_hist(net)
 
     # web(net)
 
@@ -154,13 +155,14 @@ def run_reg():
 def run_reg_2d():
     hp = reg_2d_hp()
 
-    x_train, y_train, x_test, y_true = gaussian_data_2d(hp)
+    # x_train, y_train, x_test, y_true = gaussian_data_2d(hp)
 
-    # x_train, y_train, x_test, y_true = poly_data_2d(hp)
+    x_train, y_train, x_val, y_val, x_test, y_true = poly_data_2d(hp)
 
-    # init_plot_contour(x_train, y_true, hp)
+    # init_plot_contour(x_train, x_val, y_true, hp)
+    # init_plot_3d(x_train, y_train, x_val, y_val, y_true, hp)
+
     # init_plot_3d(x_test, y_true, y_true, hp)
-    init_plot_3d(x_train, y_train, y_true, hp)
 
     x_train = Variable(torch.Tensor(x_train))
     y_train = Variable(torch.Tensor(y_train))
@@ -176,6 +178,9 @@ def run_reg_2d():
 
     losses, mses = train_bnn(net, x_train, y_train, x_test, y_true, hp)
 
+    plot_loss(losses)
+    plot_loss(mses)
+
     # y_pred = (net((torch.tensor(x_train)).float())).detach().numpy()
 
     _, y_pred, pred_std = eval_reg(net, x_test, hp.pred_samples)
@@ -185,6 +190,7 @@ def run_reg_2d():
     x_train = inverse_data(scaler_x, x_train)
     x_test = inverse_data(scaler_x, x_test)
     y_train = inverse_data(scaler_y, y_train)
+    y_pred = inverse_data(scaler_y, y_pred)
     y_true = inverse_data(scaler_y, y_true)
 
     # Uncertainty contour plot
@@ -197,7 +203,7 @@ def run_reg_2d():
 def run_nn_2d():
     hp = reg_2d_hp()
     net = NN(hp)
-    x_train, y_train, x_test, y_true = gaussian_data_2d(hp)
+    x_train, y_train, x_val, y_val, x_test, y_true = poly_data_2d(hp)
 
     x_train = Variable(torch.Tensor(x_train)).float()
     y_train = Variable(torch.Tensor(y_train)).float()

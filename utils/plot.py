@@ -34,7 +34,7 @@ def plot_3d():
     return x1, x2, pos
 
 
-def init_plot_contour(x_train, y_true, hp):
+def init_plot_contour(x_train, x_val, y_true, hp):
     # x1, x2, pos = plot_3d()
     x1, x2 = hp.grid
 
@@ -43,12 +43,15 @@ def init_plot_contour(x_train, y_true, hp):
     # Truth
     con = ax.contourf(x1, x2, y_true.reshape(x1.shape), cmap='viridis')
 
-    # Sampled data points
+    # Sampled training data
     ax.scatter(x_train[:, 0],
                x_train[:, 1],
                marker='+',
                color='black',
                alpha=.6)
+
+    # Validation data
+    ax.scatter(x_val[:, 0], x_val[:, 1], marker='o', color='green', alpha=.3)
 
     # Colour bar
     cbar = plt.colorbar(con)
@@ -69,7 +72,7 @@ def uncertainty_plot_contour(x_train, std, hp):
     # Truth
     con = ax.contourf(x1, x2, std.reshape(x1.shape), cmap='cividis')
 
-    # Sampled data points
+    # Sampled training data points
     ax.scatter(x_train[:, 0],
                x_train[:, 1],
                color='black',
@@ -86,7 +89,7 @@ def uncertainty_plot_contour(x_train, std, hp):
     plt.show()
 
 
-def init_plot_3d(x_train, y_train, y_true, hp):
+def init_plot_3d(x_train, y_train, x_val, y_val, y_true, hp):
     x1, x2 = hp.grid
 
     fig = plt.figure()
@@ -100,13 +103,21 @@ def init_plot_3d(x_train, y_train, y_true, hp):
                     color='grey',
                     alpha=0.3)
 
-    # Sampled data points
+    # Sampled training data points
     ax.scatter(x_train[:, 0],
                x_train[:, 1],
                y_train,
                marker='x',
                c='black',
                alpha=.6)
+
+    # Validation data points
+    ax.scatter(x_val[:, 0],
+               x_val[:, 1],
+               y_val,
+               marker='o',
+               c='green',
+               alpha=.3)
 
     ax.set_xlabel('x1')
     ax.set_ylabel('x2')

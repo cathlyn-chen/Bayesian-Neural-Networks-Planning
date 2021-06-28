@@ -40,7 +40,7 @@ def mnist_hp():
 def reg_hp():
     hp = BBBHparams()
     hp.noise = 0.03
-    hp.n_epochs = 3000
+    hp.n_epochs = 9000
 
     hp.n_input = 1
     hp.n_output = 1
@@ -71,7 +71,7 @@ def reg_hp():
     hp.plot_progress = False
     hp.plot_loss = False
 
-    # MoG
+    # MoG ground truth
     hp.m1 = 1.2
     hp.s1 = 0.3
     hp.m2 = 2.4
@@ -82,19 +82,20 @@ def reg_hp():
 
 def reg_2d_hp():
     hp = reg_hp()
-    hp.n_epochs = 60
-    hp.learning_rate = 0.01
-
     hp.n_input = 2
     hp.hidden_units = 15
 
-    hp.sigma_prior1 = 6
+    hp.n_epochs = 9000
+    hp.learning_rate = 0.01
+    hp.pred_samples = 1000
 
+    hp.sigma_prior1 = 6
     hp.prior = "gaussian"
 
+    # Gaussian ground truth
     hp.mean = np.array([0., 1.])
     hp.covariance = np.array([[1, 0.8], [0.8, 1]])
-    hp.grid = np.mgrid[-3:3.6:0.3, -2.4:3.6:0.3]
+    hp.grid = np.mgrid[-3.3:3.3:0.3, -3.3:3.3:0.3]
 
     return hp
 

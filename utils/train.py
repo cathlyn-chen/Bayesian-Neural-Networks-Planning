@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import imageio
 
 
-def train_bnn(net, x_train, y_train, x_test, y_true, hp):
+def train_bnn(net, x_train, y_train, x_val, y_val, hp):
     optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
 
     # Plot training progress gif
@@ -44,11 +44,11 @@ def train_bnn(net, x_train, y_train, x_test, y_true, hp):
         # Evaluation
         with torch.no_grad():
             predictions = net(torch.from_numpy(
-                np.array(x_train)).float()).data.numpy()
+                np.array(x_val)).float()).data.numpy()
 
-            # _, predictions, _, = eval_reg(net, x_test, hp.seval_samples)
+            # _, predictions, _, = eval_reg(net, x_test, hp.val_samples)
 
-            mse = eval_mse(predictions, y_train)
+            mse = eval_mse(predictions, y_val)
             # like = eval_like(net, x_test, y_true, hp)
 
         loss_lst.append(np.mean(losses))
@@ -57,7 +57,7 @@ def train_bnn(net, x_train, y_train, x_test, y_true, hp):
 
         if e % 10 == 0:
             print('epoch: {}'.format(e + 1), 'loss', np.mean(losses), 'MSE',
-                  mse)#, 'likelihood', sum(like))
+                  mse)  #, 'likelihood', sum(like))
 
             if e > 5400:
                 if hp.plot_progress:

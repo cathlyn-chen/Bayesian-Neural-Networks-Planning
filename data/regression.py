@@ -55,11 +55,15 @@ def multi_normal(x, hp):
 
 
 def poly_2d(x, sigma):
-    # e1 = np.random.randn() * sigma
-    # e2 = np.random.randn() * sigma
-    x1, x2 = x
-    # return -(x1 + e1)**2 - (x1 + e1) + (x2 + e2)**2
-    return -x1**2 - x1 + x2**2
+    e1 = np.random.randn() * sigma
+    e2 = np.random.randn() * sigma
+    x1, x2 = x[0], x[1]
+
+    return -(x1 + e1)**2 - (x1 + e1) + (x2 + e2)**2
+    # return (x1 + e1)**2 + (x2 + e1)
+    # return np.sin(x1 + e1) + np.sin(x2 + e2)
+    # return np.sin((x1 + e1)**2 + (x2 + e2)**2)
+    # return (x1 + e1) * np.cos(x2 + e2)
 
 
 ''' Data for regression from ground truth '''
@@ -205,8 +209,6 @@ def gaussian_data_2d(hp):
 
     y_train = np.array([multi_normal(x, hp) for x in x_train])
 
-    # x_test = np.mgrid[-3:3.6:0.3, -2.4:3.6:0.3].reshape(2, -1).T
-
     x_test = hp.grid.reshape(2, -1).T
 
     y_true = np.array([multi_normal(x, hp) for x in x_test])
@@ -225,19 +227,21 @@ def gaussian_data_2d(hp):
 
 def poly_data_2d(hp):
 
-    data = hp.grid.reshape(2, -1).T
+    data = hp.grid.copy().reshape(2, -1).T
     np.random.shuffle(data)
     # print(data.shape)
 
     x_train = data[:hp.train_size]
+    x_val = data[hp.train_size:hp.train_size + hp.val_size]
 
     y_train = np.array([poly_2d(x, hp.noise) for x in x_train])
+    y_val = np.array([poly_2d(x, hp.noise) for x in x_val])
 
     x_test = hp.grid.reshape(2, -1).T
     y_true = np.array([poly_2d(x, 0) for x in x_test])
     # print(y_true.shape)
 
-    return x_train, y_train, x_test, y_true
+    return x_train, y_train, x_val, y_val, x_test, y_true
 
 
 def transform_data(data):
