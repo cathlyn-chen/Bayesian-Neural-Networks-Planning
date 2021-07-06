@@ -19,23 +19,7 @@ def initial_plot(train_data, train_label, x_test, y_true):
     plt.show()
 
 
-def plot_3d():
-    # n_grid = 30
-    # x1s = np.linspace(-3, 3.6, n_grid)
-    # x2s = np.linspace(-2.4, 3.6, n_grid)
-    # x1, x2 = np.meshgrid(x1s, x2s)
-
-    x1, x2 = np.mgrid[-3:3.6:0.3, -2.4:3.6:0.3]
-
-    pos = np.empty(x1.shape + (2, ))
-    pos[:, :, 0] = x1
-    pos[:, :, 1] = x2
-
-    return x1, x2, pos
-
-
 def init_plot_contour(x_train, x_val, y_true, hp):
-    # x1, x2, pos = plot_3d()
     x1, x2 = hp.grid
 
     fig, ax = plt.subplots()
@@ -48,23 +32,28 @@ def init_plot_contour(x_train, x_val, y_true, hp):
                x_train[:, 1],
                marker='+',
                color='black',
-               alpha=.6)
+               alpha=.6,
+               label='Train data')
 
     # Validation data
-    ax.scatter(x_val[:, 0], x_val[:, 1], marker='o', color='green', alpha=.3)
+    ax.scatter(x_val[:, 0],
+               x_val[:, 1],
+               marker='o',
+               color='green',
+               alpha=.3,
+               label='Validation data')
 
     # Colour bar
     cbar = plt.colorbar(con)
     cbar.ax.set_ylabel('y value', fontsize=9)
 
     ax.set_aspect('equal')
-    # ax.set_title('Samples from bivariate normal distribution')
-
+    ax.set_title('Ground Truth Contour Plot & Sampled Points')
+    plt.legend()
     plt.show()
 
 
 def uncertainty_plot_contour(x_train, std, hp):
-    # x1, x2, pos = plot_3d()
     x1, x2 = hp.grid
 
     fig, ax = plt.subplots()
@@ -77,7 +66,8 @@ def uncertainty_plot_contour(x_train, std, hp):
                x_train[:, 1],
                color='black',
                marker='+',
-               alpha=.6)
+               alpha=.6,
+               label='Train data')
 
     # Colour bar for uncertainty
     cbar = plt.colorbar(con)
@@ -85,7 +75,7 @@ def uncertainty_plot_contour(x_train, std, hp):
 
     ax.set_aspect('equal')
     # ax.set_title('Samples from bivariate normal distribution')
-
+    plt.legend()
     plt.show()
 
 
@@ -109,7 +99,8 @@ def init_plot_3d(x_train, y_train, x_val, y_val, y_true, hp):
                y_train,
                marker='x',
                c='black',
-               alpha=.6)
+               alpha=.6,
+               label='Train data')
 
     # Validation data points
     ax.scatter(x_val[:, 0],
@@ -117,16 +108,20 @@ def init_plot_3d(x_train, y_train, x_val, y_val, y_true, hp):
                y_val,
                marker='o',
                c='green',
-               alpha=.3)
+               alpha=.3,
+               label='Validation data')
 
     ax.set_xlabel('x1')
     ax.set_ylabel('x2')
     ax.set_zlabel('y')
 
+    ax.set_title('Ground Truth & Sampled Points')
+
+    plt.legend()
     plt.show()
 
 
-def pred_plot_3d(x_train, y_train, x_test, y_pred, y_true, hp):
+def pred_plot_3d(x_train, y_train, y_pred, y_true, hp):
     x1, x2 = hp.grid
 
     fig = plt.figure()
@@ -138,7 +133,8 @@ def pred_plot_3d(x_train, y_train, x_test, y_pred, y_true, hp):
                     y_true.reshape(x1.shape),
                     color='grey',
                     linewidth=0,
-                    alpha=0.3)
+                    alpha=0.3,
+                    label='Truth')
     # cmap='viridis'
 
     # Pred plot
@@ -257,4 +253,66 @@ def plot_hist(net):
 
 def plot_loss(loss):
     plt.plot(loss)
+
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.show()
+
+
+def plot_like(x, like):
+    plt.plot(x, like, '-o', color='purple')
+    # plt.scatter(x, like, marker='o')
+
+    plt.xlabel("x")
+    plt.ylabel("Log likelihood of true y under posterior distribution HUH")
+    plt.show()
+
+
+def plot_like_3d(x_val, like):
+    # # print(x_val.shape)
+    # x1, x2 = x_val.T[0], x_val.T[1]
+    # # print(x1.shape, x2.shape)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    ax.scatter(x_val[:, 0],
+               x_val[:, 1],
+               like,
+               linewidth=0,
+               c=like,
+               cmap='coolwarm',
+               alpha=0.9,
+               marker='>',
+               label='Log likelihood of true y under posterior distribution')
+
+    ax.set_xlabel('x1')
+    ax.set_ylabel('x2')
+    # ax.set_zlabel()
+
+    plt.legend()
+    plt.show()
+
+
+def plot_like_contour(x_train, like, hp):
+    fig, ax = plt.subplots()
+    x1, x2 = hp.grid
+
+    con = ax.contourf(x1, x2, np.array(like).reshape(x1.shape), cmap='plasma')
+
+    # Sampled training data points
+    ax.scatter(x_train[:, 0],
+               x_train[:, 1],
+               color='black',
+               marker='+',
+               alpha=.6,
+               label='Train data')
+
+    # Colour bar for uncertainty
+    cbar = plt.colorbar(con)
+    cbar.ax.set_ylabel('Log likelihood', fontsize=9)
+
+    ax.set_aspect('equal')
+
+    plt.legend()
     plt.show()

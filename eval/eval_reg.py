@@ -6,10 +6,10 @@ from torch.distributions import Normal
 from ..utils.plot import *
 
 
-def eval_reg(net, x_test, n):
+def eval_reg(net, x, n):
     with torch.no_grad():
         pred_lst = [
-            net(torch.Tensor(x_test)).data.numpy().squeeze(1) for _ in range(3)
+            net(torch.Tensor(x)).data.numpy().squeeze(1) for _ in range(n)
         ]  #(n, x_test.shape)
 
         pred = np.array(pred_lst).T
@@ -23,20 +23,25 @@ def eval_reg(net, x_test, n):
     return pred_lst, pred_mean, pred_std
 
 
-def eval_like(net, x_test, y_true, hp):
+def eval_like(net, x, y, hp):
     with torch.no_grad():
-        _, pred_mean, pred_std = eval_reg(net, x_test, hp.pred_samples)
+        _, pred_mean, pred_std = eval_reg(net, x, hp.eval_samples)
 
-        y_true = torch.tensor(y_true.reshape(-1, 1))
+        y = torch.tensor(y.reshape(-1, 1))
+        # print(y.shape)
+        # print(pred_mean.shape, y.shape)
 
-        N = len(x_test)
         # print(pred_mean[0], pred_mean[1])
+        # print(Normal(pred_mean[0], pred_std[0]).log_prob(y[0]))
 
-        # print(Normal(pred_mean[0], pred_std[0]).log_prob(y_true[0]))
+        like = np.array([
+            Normal(pred_mean[i], pred_std[i]).log_prob(y[i])
+            for i in range(len(y))
+        ])
 
-        like = Normal(pred_mean, pred_std).log_prob(y_true)
+        # print(like.shape)
 
-        print(like.shape)
+        # plot_like(x, like)
 
     return like
 

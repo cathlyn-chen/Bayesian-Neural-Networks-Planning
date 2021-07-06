@@ -1,13 +1,16 @@
-from ..eval.eval_reg import eval_like, eval_mse, eval_reg
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
+from torch.distributions import Normal
 
-from .plot import *
 import matplotlib.pyplot as plt
 import imageio
+
+from .plot import *
+from .tools import *
+from ..eval.eval_reg import eval_like, eval_mse, eval_reg
 
 
 def train_bnn(net, x_train, y_train, x_val, y_val, hp):
@@ -35,6 +38,7 @@ def train_bnn(net, x_train, y_train, x_val, y_val, hp):
                 torch.Tensor(y_train[b * hp.batch_size:(b + 1) *
                                      hp.batch_size])).float()
 
+            # Forward sample to return loss
             loss = net.sample_elbo(X, y)
             losses.append(loss.data.numpy())
 
@@ -49,15 +53,19 @@ def train_bnn(net, x_train, y_train, x_val, y_val, hp):
             # _, predictions, _, = eval_reg(net, x_test, hp.val_samples)
 
             mse = eval_mse(predictions, y_val)
-            # like = eval_like(net, x_test, y_true, hp)
+            # print(x_val.shape, y_val.shape)
+            # like = eval_like(net, x_val, y_val, hp)
+            # print(like.shape, type(like))
+            # print(x_train.shape, predictions.shape)
 
         loss_lst.append(np.mean(losses))
         mse_lst.append(mse)
-        # like_lst.append(sum(like))
+        # like_lst.append(np.sum(like))
+        #sum(like).data.numpy()[0]
 
         if e % 10 == 0:
             print('epoch: {}'.format(e + 1), 'loss', np.mean(losses), 'MSE',
-                  mse)  #, 'likelihood', sum(like))
+                  mse)  #, 'likelihood', np.sum(like))
 
             if e > 5400:
                 if hp.plot_progress:
@@ -69,7 +77,67 @@ def train_bnn(net, x_train, y_train, x_val, y_val, hp):
     if hp.plot_progress:
         imageio.mimsave('./train_progress.gif', my_images, fps=9)
 
-    # plot_loss(like)
+    # plot_like(x_val, like)
+
+    # plot_like_3d(x_val, like)
+
+    print('Finished Training')
+
+    return loss_lst, mse_lst, like_lst
+
+
+def train_bnn_ncp(net, x_train, y_train, x_val, y_val, hp):
+    optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
+
+    loss_lst = []
+    mse_lst = []
+
+    for e in range(hp.n_epochs):
+        losses = []
+
+        # Minibathces
+        for b in range(hp.n_train_batches):
+            net.zero_grad()
+            X = Variable(
+                torch.Tensor(x_train[b * hp.batch_size:(b + 1) *
+                                     hp.batch_size]).float())
+
+            ood_X = X + np.random.normal(0, hp.sigma_x, size=X.shape)
+
+            y = Variable(
+                torch.Tensor(y_train[b * hp.batch_size:(b + 1) *
+                                     hp.batch_size])).float()
+
+            ood_mean_prior = Normal(y, hp.sigma_y)
+
+            ood_mean_dist = net.forward_ncp(ood_X)
+
+            # Loss
+            nll = net.nll(X, y)
+            kl = nn.MSELoss()
+            kl_loss = kl(ood_mean_prior, ood_mean_dist)
+
+            loss = kl_loss + nll
+            losses.append(loss.data.numpy())
+
+            loss.backward()
+            optimizer.step()
+
+        # Evaluation
+        with torch.no_grad():
+            predictions = net(torch.from_numpy(
+                np.array(x_val)).float()).data.numpy()
+            mse = eval_mse(predictions, y_val)
+
+        loss_lst.append(np.mean(losses))
+        mse_lst.append(mse)
+
+        if e % 10 == 0:
+            print('epoch: {}'.format(e + 1), 'loss', np.mean(losses), 'MSE',
+                  mse)
+    # plot_like(x_val, like)
+
+    # plot_like_3d(x_val, like)
 
     print('Finished Training')
 

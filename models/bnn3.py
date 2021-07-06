@@ -32,10 +32,10 @@ class BNNLayer(nn.Module):
         self.b_mu = nn.Parameter(torch.zeros(n_output))
         self.b_rho = nn.Parameter(torch.zeros(n_output))
 
-        # nn.init.xavier_uniform_(self.w_mu)
-        # nn.init.xavier_uniform_(self.w_rho)
-        # nn.init.zeros_(self.b_mu)
-        # nn.init.zeros_(self.b_rho)
+        nn.init.xavier_uniform_(self.w_mu)
+        nn.init.xavier_uniform_(self.w_rho)
+        nn.init.zeros_(self.b_mu)
+        nn.init.zeros_(self.b_rho)
 
         # Initialize weight samples - calculated whenever the layer makes a prediction
         self.w = None
@@ -77,35 +77,51 @@ class BNNLayer(nn.Module):
         return forward
 
     # '''
-    '''
+    ''' Sample N in parallel
     def forward(self, input):
         N = self.hp.n_samples
 
         # Sample weights
-        w_epsilon = [Normal(0, 1).sample(self.w_mu.shape) for _ in range(N)]  #(N, (H, I))
-        self.w = self.w_mu + torch.log(
-            1 + torch.exp(self.w_rho)) * w_epsilon  #(N, (H, I))
+        w_epsilon = [Normal(0, 1).sample(self.w_mu.shape)
+                     for _ in range(N)]  #(N, (H, I))
+        self.w = [
+            self.w_mu + torch.log(1 + torch.exp(self.w_rho)) * eps
+            for eps in w_epsilon
+        ]  #(N, (H, I))
 
         # Sample bias
         b_epsilon = [Normal(0, 1).sample(self.b_mu.shape)
                      for _ in range(N)]  #(N, (H, I))
-        self.b = self.b_mu + torch.log(1 + torch.exp(self.b_rho)) * b_epsilon
+        self.b = [
+            self.b_mu + torch.log(1 + torch.exp(self.b_rho)) * eps
+            for eps in b_epsilon
+        ]
 
         # Log prior - evaluating log pdf of prior at sampled weight and bias
-        w_log_prior = self.prior.log_prob(self.w)
-        b_log_prior = self.prior.log_prob(self.b)
-        self.log_prior = torch.sum(w_log_prior, axis=1) + torch.sum(
-            b_log_prior, axis=1)  #(N, 1)
+        w_log_prior = [self.prior.log_prob(w) for w in self.w]
+        b_log_prior = [self.prior.log_prob(b) for b in self.b]
+        self.log_prior = [
+            torch.sum(w_log_prior[i]) + torch.sum(b_log_prior[i])
+            for i in range(N)
+        ]  #(N, 1)
 
         # Log variational posterior - evaluating log pdf of normal distribution defined by parameters with respect at the sampled values
-        self.w_post = Normal(self.w_mu.data,
-                             torch.log(1 + torch.exp(self.w_rho)))
-        self.b_post = Normal(self.b_mu.data,
-                             torch.log(1 + torch.exp(self.b_rho)))
-        self.log_post = self.w_post.log_prob(
-            self.w).sum(axis=1) + self.b_post.log_prob(self.b).sum(axis=1)
+        self.w_post = [
+            Normal(self.w_mu.data, torch.log(1 + torch.exp(rho)))
+            for rho in self.w_rho
+        ]
+        self.b_post = [
+            Normal(self.b_mu.data, torch.log(1 + torch.exp(rho)))
+            for rho in self.b_rho
+        ]
+        self.log_post = [
+            self.w_post[i].log_prob(self.w[i]).sum() +
+            self.b_post[i].log_prob(self.b[i]).sum() for i in range(N)
+        ]  #(N, 1)
 
-        return F.linear(input, self.w, self.b)
+        output = [F.linear(input, self.w[i], self.b[i]) for i in range(N)]
+        return output
+
     '''
 
 
@@ -114,9 +130,9 @@ class BNN(nn.Module):
         # Initialize the network but using the BBB layer
         super().__init__()
         self.hp = hp
-        self.input = BNNLayer(hp.n_input, hp.hidden_units, hp)
+        self.input_layer = BNNLayer(hp.n_input, hp.hidden_units, hp)
 
-        self.hidden = BNNLayer(hp.hidden_units, hp.hidden_units, hp)
+        self.hidden_layer = BNNLayer(hp.hidden_units, hp.hidden_units, hp)
 
         if hp.activation == 'sigmoid':
             self.act = nn.Sigmoid()
@@ -125,7 +141,7 @@ class BNN(nn.Module):
         elif hp.activation == 'tanh':
             self.act = nn.Tanh()
 
-        self.output = BNNLayer(hp.hidden_units, hp.n_output, hp)
+        self.output_layer = BNNLayer(hp.hidden_units, hp.n_output, hp)
 
         if hp.task == 'classification':
             self.softmax = nn.Softmax()
@@ -133,44 +149,29 @@ class BNN(nn.Module):
         self.noise_tol = hp.noise_tol  # Used to calculate likelihood
 
     def forward(self, x):
-        out = self.act(self.input(x))
-        out = self.act(self.hidden(out))
-        out = self.output(out)
+        out = self.act(self.input_layer(x))
+        out = self.act(self.hidden_layer(out))
+        out = self.output_layer(out)
         if self.hp.task == 'classification':
             out = self.softmax(out)
         return out
 
     def log_prior(self):
         # Log prior over all the layers
-        # return self.input.log_prior + self.output.log_prior
-        return self.input.log_prior + self.output.log_prior + self.hidden.log_prior
+        # return self.input_layer.log_prior + self.output_layer.log_prior
+        return self.input_layer.log_prior + self.output_layer.log_prior + self.hidden_layer.log_prior
 
     def log_post(self):
         # Log posterior over all the layers
-        # return self.input.log_post + self.output.log_post
-        return self.input.log_post + self.output.log_post + self.hidden.log_post
+        # return self.input_layer.log_post + self.output_layer.log_post
+        return self.input_layer.log_post + self.output_layer.log_post + self.hidden_layer.log_post
 
     def sample_elbo(self, input, target):
         samples = self.hp.n_samples
-        ''' Vectorize
-        outputs = torch.stack(
-            [self(input).reshape(-1) for _ in range(samples)])
 
-        log_priors = torch.tensor([self.log_prior() for _ in range(samples)],
-                                  requires_grad=True)
-
-        log_posts = torch.tensor([self.log_post() for _ in range(samples)],
-                                 requires_grad=True)
-
-        log_likes = torch.tensor([
-            Normal(outputs[i], self.noise_tol).log_prob(
-                target.reshape(-1)).sum() for i in range(samples)
-        ],
-                                 requires_grad=True)
-        '''
         # ''' For Loop
-        # Initialize tensors
 
+        # Initialize tensors
         outputs = torch.zeros(samples, target.shape[0])
         # print(target.shape)
         # print(outputs.shape)
@@ -195,15 +196,17 @@ class BNN(nn.Module):
         if self.hp.task == 'classification':
             log_likes = F.nll_loss(outputs.mean(0), target, reduction='sum')
 
-        # print(outputs.shape, type(outputs))
-        # print(outputs)
         # '''
         '''
+        print(type(input))
         outputs = self(input)
         log_priors = self.log_prior()
         log_posts = self.log_post()
-        log_likes = Normal(outputs, self.noise_tol).log_prob(
-            target.reshape(-1)).sum(axis=1)
+        log_likes = [
+            Normal(output,
+                   self.noise_tol).log_prob(target.reshape(-1)).sum()
+            for output in outputs
+        ]
         '''
 
         # Monte Carlo estimate of prior posterior and likelihood
@@ -215,3 +218,83 @@ class BNN(nn.Module):
                                                  log_prior) - log_like
 
         return loss
+
+
+class BNNNCP(nn.Module):
+    def __init__(self, hp):
+        # Initialize the network but using the BBB layer
+        super().__init__()
+        self.hp = hp
+        self.input_layer = BNNLayer(hp.n_input, hp.hidden_units, hp)
+
+        self.hidden_layer = BNNLayer(hp.hidden_units, hp.hidden_units, hp)
+
+        if hp.activation == 'sigmoid':
+            self.act = nn.Sigmoid()
+        elif hp.activation == 'relu':
+            self.act = nn.ReLU()
+        elif hp.activation == 'tanh':
+            self.act = nn.Tanh()
+
+        self.output_layer = BNNLayer(hp.hidden_units, hp.n_output, hp)
+
+        if hp.task == 'classification':
+            self.softmax = nn.Softmax()
+
+        self.noise_tol = hp.noise_tol  # Used to calculate likelihood
+
+    def forward(self, x):
+        out = self.act(self.input_layer(x))
+        out = self.act(self.hidden_layer(out))
+        out = self.output_layer(out)
+        if self.hp.task == 'classification':
+            out = self.softmax(out)
+        return out
+
+    def forward_ncp(self, x):
+        out = self.act(self.input_layer(x.float()))
+        self.mean_dist_fn(self.input_layer, x.float())
+
+        out = self.act(self.hidden_layer(out))
+        self.mean_dist_fn(self.hidden_layer, out)
+
+        out = self.output_layer(out)
+
+        return self.mean_dist_fn(self.output_layer, out)
+
+    def mean_dist_fn(self, layer, input):
+        bias_mean = layer.b_post.mean()
+        m = layer.w_post.mean()
+        s = layer.w_post.stddev()
+
+        mu_mean = torch.matmul(input, m) + bias_mean
+        mu_var = torch.matmul(input**2, s**2)
+        mu_std = torch.sqrt(mu_var)
+
+        return Normal(mu_mean, mu_std)
+
+    def log_prior(self):
+        # Log prior over all the layers
+        # return self.input_layer.log_prior + self.output_layer.log_prior
+        return self.input_layer.log_prior + self.output_layer.log_prior + self.hidden_layer.log_prior
+
+    def log_post(self):
+        # Log posterior over all the layers
+        # return self.input_layer.log_post + self.output_layer.log_post
+        return self.input_layer.log_post + self.output_layer.log_post + self.hidden_layer.log_post
+
+    def nll(self, input, target):
+        samples = self.hp.n_samples
+
+        # Initialize tensors
+        outputs = torch.zeros(samples, target.shape[0])
+        log_likes = torch.zeros(samples)
+
+        for i in range(samples):
+            outputs[i] = self(input).squeeze(1)
+            log_likes[i] = Normal(outputs[i], self.noise_tol).log_prob(
+                target.reshape(-1)).sum()
+
+        log_like = log_likes.mean()
+
+        return -log_like

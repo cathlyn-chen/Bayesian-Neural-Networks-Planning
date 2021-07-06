@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.stats import multivariate_normal
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from ..hparams import reg_hp
 from ..utils.plot import *
+from ..utils.tools import *
 
 np.random.seed(3)
 ''' Ground truth functions for regression '''
@@ -59,9 +59,9 @@ def poly_2d(x, sigma):
     e2 = np.random.randn() * sigma
     x1, x2 = x[0], x[1]
 
-    return -(x1 + e1)**2 - (x1 + e1) + (x2 + e2)**2
+    # return -(x1 + e1)**2 - (x1 + e1) + (x2 + e2)**2
     # return (x1 + e1)**2 + (x2 + e1)
-    # return np.sin(x1 + e1) + np.sin(x2 + e2)
+    return np.sin(x1 + e1) + np.sin(x2 + e2)
     # return np.sin((x1 + e1)**2 + (x2 + e2)**2)
     # return (x1 + e1) * np.cos(x2 + e2)
 
@@ -70,8 +70,8 @@ def poly_2d(x, sigma):
 
 
 def poly_data(hp):
-    train_neg = np.linspace(-4.0, -1.0, 30).reshape(-1, 1)
-    train_pos = np.linspace(1.0, 4.0, 30).reshape(-1, 1)
+    train_neg = np.linspace(-3.9, -1.2, int(hp.train_size / 2)).reshape(-1, 1)
+    train_pos = np.linspace(1.2, 3.9, int(hp.train_size / 2)).reshape(-1, 1)
     train_data = np.concatenate((train_neg, train_pos), axis=0)
     train_label = poly(train_data, hp.noise)
 
@@ -110,8 +110,15 @@ def MoG_data_val(hp):
 
     np.random.shuffle(data)
 
+    # train_indices = np.random.uniform(0.3, 3.3, [hp.train_size, 1])
+    # print(len(train_indices), train_indices[:3])
+
     x_train = data[:hp.train_size]
-    x_val = data[hp.train_size:]
+    x_train = np.sort(x_train, axis=0)
+    # print(x_train[:6])
+    x_val = np.sort(data[hp.train_size:])
+    x_val = np.sort(x_val, axis=0)
+    # print(x_val[:6])
 
     y_train = MoG(x_train, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, hp.noise)
     y_val = MoG(x_val, hp.m1, hp.s1, hp.m2, hp.s2, hp.pi, hp.noise)
@@ -128,14 +135,21 @@ def toy_reg_data(hp):
     train_high = np.linspace(0.3, 0.6, area_size).reshape(-1, 1)
     train_medium = np.linspace(0.9, 1.2, area_size).reshape(-1, 1)
 
-    train_data = np.concatenate((train_low, train_high, train_medium), axis=0)
+    x_train = np.concatenate((train_low, train_high, train_medium), axis=0)
 
-    train_label = toy_reg(train_data, hp.noise)
+    x_val = np.linspace(-0.3, 1.5, hp.val_size).reshape(-1, 1)
+    # print(x_val[:6], len(x_val))
+
+    # train_indices = np.random.uniform(0.3, 3.3, [hp.train_size, 1])
+    # print(len(train_indices), train_indices[:3])
+
+    y_train = toy_reg(x_train, hp.noise)
+    y_val = toy_reg(x_val, hp.noise)
 
     x_test = np.linspace(-0.3, 1.8, 1000).reshape(-1, 1)
     y_true = toy_reg(x_test, 0)
 
-    return train_data, train_label, x_test, y_true
+    return x_train, y_train, x_val, y_val, x_test, y_true
 
 
 def paper_reg_data(hp):
@@ -232,7 +246,9 @@ def poly_data_2d(hp):
     # print(data.shape)
 
     x_train = data[:hp.train_size]
+    # x_train = np.sort(x_train, axis=0)
     x_val = data[hp.train_size:hp.train_size + hp.val_size]
+    # x_val = np.sort(x_val, axis=0)
 
     y_train = np.array([poly_2d(x, hp.noise) for x in x_train])
     y_val = np.array([poly_2d(x, hp.noise) for x in x_val])
@@ -242,16 +258,3 @@ def poly_data_2d(hp):
     # print(y_true.shape)
 
     return x_train, y_train, x_val, y_val, x_test, y_true
-
-
-def transform_data(data):
-    scaler = StandardScaler()
-    # scaler = MinMaxScaler()
-    scaled_data = scaler.fit_transform(data)
-
-    return scaler, scaled_data
-
-
-def inverse_data(scaler, data):
-    ori_data = scaler.inverse_transform(data)
-    return ori_data
