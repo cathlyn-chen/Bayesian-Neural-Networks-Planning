@@ -40,7 +40,7 @@ def mnist_hp():
 def reg_hp():
     hp = BBBHparams()
     hp.noise = 0.03
-    hp.n_epochs = 3000
+    hp.n_epochs = 9000
 
     hp.n_input = 1
     hp.n_output = 1
@@ -77,9 +77,17 @@ def reg_hp():
     hp.m2 = 2.4
     hp.s2 = 0.6
 
-    # NCP
+    return hp
+
+
+def reg_ncp():
+    hp = reg_hp()
+    hp.n_epochs = 3000
+
     hp.sigma_x = 0.3
     hp.sigma_y = 0.3
+
+    hp.pred_samples = 300
 
     return hp
 
@@ -89,7 +97,7 @@ def reg_2d_hp():
     hp.n_input = 2
     hp.hidden_units = 15
 
-    hp.n_epochs = 300
+    hp.n_epochs = 3000
     hp.learning_rate = 0.01
     hp.pred_samples = 1000
 
@@ -101,6 +109,15 @@ def reg_2d_hp():
     # Gaussian ground truth
     hp.mean = np.array([0., 1.])
     hp.covariance = np.array([[1, 0.8], [0.8, 1]])
+
+    return hp
+
+
+def nav_hp():
+    hp = reg_hp()
+
+    hp.init_state = torch.tensor([1, 1])
+    hp.goal_state = torch.tensor([6, 6])
 
     return hp
 

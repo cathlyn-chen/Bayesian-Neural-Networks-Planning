@@ -1,3 +1,5 @@
+from torch.distributions.kl import kl_divergence
+from torch.nn.functional import kl_div
 import torch.optim as optim
 from torch.distributions import Normal
 
@@ -5,6 +7,7 @@ from .hparams import *
 from .utils.train import *
 from .utils.plot import *
 from .data.regression import *
+from .data.navigation import *
 from .data.mnist import *
 from .eval.eval_class import *
 from .eval.eval_reg import *
@@ -12,7 +15,6 @@ from .eval.eval_reg import *
 # from .models.bnn1 import BNN
 from .models.bnn3 import *
 from .models.nn import NN
-from .data.regression import MoG
 
 
 def run1():
@@ -118,8 +120,8 @@ def run_reg():
     # x_train, y_train, x_test, y_true = MoG_data(hp)
     # x_train, y_train, x_test, y_true = paper_reg_data(hp)
     # x_train, y_train, x_test, y_true = f_data(hp)
-    x_train, y_train, x_test, y_true = poly_data(hp)
-    # x_train, y_train, x_test, y_true = ncp_data(hp)
+    # x_train, y_train, x_test, y_true = poly_data(hp)
+    x_train, y_train, x_test, y_true = ncp_data(hp)
 
     # x_train, y_train, x_val, y_val, x_test, y_true = toy_reg_data(hp)
     # x_train, y_train, x_val, y_val, x_test, y_true = MoG_data_val(hp)
@@ -189,7 +191,7 @@ def run_reg_2d():
     # Loss plots
     # plot_loss(losses)
     # plot_loss(mses)
-    plot_loss(likes)
+    # plot_loss(likes)
 
     # y_pred = (net((torch.tensor(x_train)).float())).detach().numpy()
 
@@ -242,7 +244,7 @@ def test_log_prob():
 
 
 def run_ncp():
-    hp = reg_hp()
+    hp = reg_ncp()
 
     x_train, y_train, x_test, y_true = poly_data(hp)
     # x_train, y_train, x_test, y_true = ncp_data(hp)
@@ -277,14 +279,26 @@ def run_ncp():
     # plot_hist(net)
 
 
+def run_nav():
+    hp = nav_hp()
+    nav_data(hp)
+
+
 if __name__ == '__main__':
     # run1()
 
     # run_reg()
     # run_nn()
-    run_ncp()
+    # run_ncp()
 
-    # run_reg_2d()
+    run_reg_2d()
     # run_nn_2d()
-
+    '''
     # test_log_prob()
+    p1 = Normal(0, 3)
+    p2 = Normal(0, 1)
+    v1 = p1.sample((900, ))
+    v2 = p2.sample((900, ))
+    print(kl_divergence(p1, p2))
+    print(kl_div(v1, v2))
+    '''

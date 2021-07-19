@@ -3,14 +3,16 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
-from torch.distributions import Normal
+from torch.distributions import Normal, kl_divergence
 
 import matplotlib.pyplot as plt
 import imageio
+from scipy.stats import norm
+import seaborn as sns
 
 from .plot import *
 from .tools import *
-from ..eval.eval_reg import eval_like, eval_mse, eval_reg
+from ..eval.eval_reg import *
 
 
 def train_bnn(net, x_train, y_train, x_val, y_val, hp):
@@ -95,6 +97,41 @@ def train_bnn_ncp(net, x_train, y_train, x_val, y_val, hp):
     for e in range(hp.n_epochs):
         losses = []
 
+        X = Variable(torch.Tensor(x_train).float())
+
+        ood_X = (X + np.random.normal(0, hp.sigma_x, size=X.shape)).float()
+
+        # input_prior = np.sum(norm(0, hp.sigma_x).pdf(ood_X - X),
+        #                      axis=0) / X.shape[0]
+        input_prior = np.mean(norm(0, hp.sigma_x).pdf(ood_X - X), axis=1)
+        # print(ood_X.shape, input_prior)
+
+        # plt.scatter(ood_X.reshape(-1, 1), input_prior)
+        # sns.lineplot(x=ood_X, y=input_prior)
+        # plt.show()
+
+        y = Variable(torch.Tensor(y_train).float())
+        output_prior = Normal(y, hp.sigma_y)
+
+        log_like = net.sample_elbo(X, y)
+
+        # ood_mean = net.ncp_mean_dist(ood_X, y)
+        # ood_y = output_prior.sample(
+        #     (hp.pred_samples, )).reshape(hp.pred_samples, -1)
+        kl = net.ncp_mean_dist(ood_X, y)
+
+        # print(ood_mean.shape, ood_y.shape)
+
+        # np.mean(norm(0, hp.sigma_x).pdf(ood_X - X), axis=1)
+
+        # loss = kl_divergence(output_prior, ood_mean) - log_like
+        loss = kl - log_like
+
+        losses.append(loss.data.numpy())
+
+        loss.backward()
+        optimizer.step()
+        '''
         # Minibathces
         for b in range(hp.n_train_batches):
             net.zero_grad()
@@ -102,8 +139,7 @@ def train_bnn_ncp(net, x_train, y_train, x_val, y_val, hp):
                 torch.Tensor(x_train[b * hp.batch_size:(b + 1) *
                                      hp.batch_size]).float())
 
-            ood_X = X + np.random.normal(0, hp.sigma_x, size=X.shape)
-
+            
             y = Variable(
                 torch.Tensor(y_train[b * hp.batch_size:(b + 1) *
                                      hp.batch_size])).float()
@@ -122,6 +158,7 @@ def train_bnn_ncp(net, x_train, y_train, x_val, y_val, hp):
 
             loss.backward()
             optimizer.step()
+        '''
 
         # Evaluation
         with torch.no_grad():

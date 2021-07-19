@@ -70,8 +70,8 @@ def poly_2d(x, sigma):
 
 
 def poly_data(hp):
-    train_neg = np.linspace(-3.9, -1.2, int(hp.train_size / 2)).reshape(-1, 1)
-    train_pos = np.linspace(1.2, 3.9, int(hp.train_size / 2)).reshape(-1, 1)
+    train_neg = np.linspace(-3.9, -1.8, int(hp.train_size / 2)).reshape(-1, 1)
+    train_pos = np.linspace(1.8, 3.9, int(hp.train_size / 2)).reshape(-1, 1)
     train_data = np.concatenate((train_neg, train_pos), axis=0)
     train_label = poly(train_data, hp.noise)
 
