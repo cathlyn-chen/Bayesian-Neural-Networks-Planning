@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.lib.utils import safe_eval
 import torch
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
@@ -57,6 +58,7 @@ def uncertainty_plot(train_data, train_label, x_test, y_true, pred_mean,
     plt.plot(x_test, y_true, color='grey', label='Truth')
 
     plt.legend()
+
     # plt.savefig(name)
     plt.show()
 
@@ -120,6 +122,10 @@ def uncertainty_plot_contour(x_train, std, hp):
 
     ax.set_aspect('equal')
     # ax.set_title('Samples from bivariate normal distribution')
+
+    # plt.xlim(0, max(x1.squeeze(1)))
+    # plt.ylim(0, max(x2.squeeze(1)))
+
     plt.legend()
     plt.show()
 
@@ -275,9 +281,110 @@ def plot_like_contour(x_train, like, hp):
 
 
 '''Navigation'''
-def plot_states(hp):
-    plt.plot(hp.init_state)
-    plt.plot(hp.goal_state)
+
+
+def nav_plot(x1, x2, y1, y2, hp):
+    plt.scatter(hp.init_state[0],
+                hp.init_state[1],
+                s=120,
+                c='green',
+                marker='^',
+                label='Init State')
+    plt.scatter(hp.goal_state[0],
+                hp.goal_state[1],
+                marker='*',
+                c='orange',
+                s=120,
+                label='Goal State')
+
+    for i in range(hp.train_size):
+        plt.plot([x1[i], x2[i]], [y1[i], y2[i]],
+                 alpha=0.3,
+                 linestyle='dashed',
+                 c='black')
+
+    plt.scatter(x1,
+                y1,
+                marker='o',
+                c='cornflowerblue',
+                s=9,
+                label='Train Data (Start)')
+    plt.scatter(x2, y2, marker='+', c='black', label='Train Data (End)')
+
+    # plt.scatter(test_data_x.T[0],
+    #             test_data_y.T[0],
+    #             c='blue',
+    #             marker='o',
+    #             alpha=0.09,
+    #             label='Test Data')
+
+    plt.xlim(0, hp.bound)
+    plt.ylim(0, hp.bound)
+    plt.legend(fontsize='small')
+    # bbox_to_anchor=(0.9, 0.15), loc='upper left',
+    plt.show()
+
+
+def nav_uncertainty(x1, x2, y1, y2, std, hp):
+    x, y = hp.grid
+
+    fig, ax = plt.subplots()
+
+    con = ax.contourf(x, y, std.reshape(x.shape), cmap='cividis')
+
+    # Sampled training data points
+    ax.scatter(x1,
+               y1,
+               marker='o',
+               c='cornflowerblue',
+               s=9,
+               label='Train Data (Start)')
+    ax.scatter(x2, y2, marker='+', c='black', label='Train Data (End)')
+
+    # Colour bar for uncertainty
+    cbar = plt.colorbar(con)
+    cbar.ax.set_ylabel('Uncertainty (+/- 3 std)', fontsize=9)
+
+    ax.set_aspect('equal')
+    # ax.set_title('Samples from bivariate normal distribution')
+
+    plt.xlim(0, hp.bound)
+    plt.ylim(0, hp.bound)
+
+    plt.legend()
+    plt.show()
+
+
+def nav_pred_plot(x1, x2, y1, y2, y_pred, y_true, hp):
+    x, y = hp.grid
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    # Truth
+    ax.plot_surface(x,
+                    y,
+                    y_true.reshape(x.shape),
+                    color='grey',
+                    linewidth=0,
+                    alpha=0.3,
+                    label='Truth')
+    # cmap='viridis'
+
+    # Pred plot
+    ax.plot_surface(x,
+                    y,
+                    np.array(y_pred).reshape((x.shape)),
+                    color='cornflowerblue',
+                    alpha=0.6)
+
+    # Sampled data points
+    ax.scatter(x1, y1, x2 + y2, marker='x', c='black', alpha=.6)
+
+    ax.set_xlabel('x1')
+    ax.set_ylabel('x2')
+    ax.set_zlabel('y')
+
     plt.show()
 
 

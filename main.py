@@ -281,7 +281,124 @@ def run_ncp():
 
 def run_nav():
     hp = nav_hp()
-    nav_data(hp)
+    x1, x2, y1, y2 = nav_sample(hp)
+
+    train_data_x, train_label_x, train_data_y, train_label_y, test_data_x, test_data_y, test_label_x, test_label_y = nav_data_pair(
+        x1, x2, y1, y2, hp)
+
+    # nav_plot(x1, x2, y1, y2, hp)
+    nav_plot(x1, x1 + x2, y1, y1 + y2, hp)
+
+    # Standardize data
+    scaler_data_x, train_data_x = transform_data(train_data_x)
+    scaler_label_x, train_label_x = transform_data(train_label_x.reshape(
+        -1, 1))
+
+    test_data_x = scaler_data_x.transform(test_data_x)
+    test_label_x = scaler_label_x.transform(test_label_x.reshape(-1, 1))
+
+    train_data_x = Variable(torch.Tensor(train_data_x).reshape(-1, 2).float())
+    train_label_x = Variable(
+        torch.Tensor(train_label_x).reshape(-1, 1).float())
+    '''x direction'''
+
+    net_x = BNN(hp)
+    _, _, _ = train_bnn(net_x, train_data_x, train_label_x,
+                                    test_data_x, test_label_x, hp)
+
+    # plot_loss(losses)
+    # plot_loss(mses)
+    # plot_loss(likes)
+
+    _, pred_mean_x, pred_std_x = eval_reg(net_x, test_data_x, hp.pred_samples)
+    '''y direction'''
+
+    # Standardize data
+    scaler_data_y, train_data_y = transform_data(train_data_y)
+    scaler_label_y, train_label_y = transform_data(train_label_y.reshape(
+        -1, 1))
+
+    test_data_y = scaler_data_y.transform(test_data_y)
+    test_label_y = scaler_label_y.transform(test_label_y.reshape(-1, 1))
+
+    train_data_y = Variable(torch.Tensor(train_data_y).reshape(-1, 2).float())
+    train_label_y = Variable(
+        torch.Tensor(train_label_y).reshape(-1, 1).float())
+    # print(train_data_x.shape, train_label_x.shape)
+
+    net_y = BNN(hp)
+    _, mse_lst, _ = train_bnn(net_y, train_data_y, train_label_y, test_data_y,
+                        test_label_y, hp)
+
+    _, pred_mean_y, pred_std_y = eval_reg(net_y, test_data_y, hp.pred_samples)
+
+    print(
+        test_label_x[:9],
+        pred_mean_x.reshape(-1, 1)[:9],
+    )
+    print(test_label_y[:9], pred_mean_y.reshape(-1, 1)[:9])
+
+    plot_loss(mse_lst)
+
+    pred_std = pred_std_x + pred_std_y
+
+    # Back to original data
+    # x_train = inverse_data(scaler_data_x, x_train)
+    # x_test = inverse_data(scaler_x, x_test)
+    # y_train = inverse_data(scaler_y, y_train)
+    # y_pred = inverse_data(scaler_y, y_pred)
+    # y_true = inverse_data(scaler_y, y_true)
+
+    # train_data_x = inverse_data(scaler_data_x, train_data_x)
+    # train_label_x = inverse_data(scaler_label_x, train_label_x)
+
+    # MSEs
+    mse_x = eval_mse(pred_mean_x, test_label_x)
+    mse_y = eval_mse(pred_mean_y, test_label_y)
+    mse = mse_x + mse_y
+
+    # print(mse_x.shape, mse_y.shape, mse.shape)
+
+    nav_pred_plot(x1, x2, y1, y2, pred_mean_x + pred_mean_y,
+                  test_label_x + test_label_y, hp)
+    nav_uncertainty(x1, x1+x2, y1, y1+y2, mse, hp)
+    nav_uncertainty(x1, x1+x2, y1, y1+y2, pred_std, hp)
+
+
+def run_nav_nn():
+    hp = nav_hp()
+    x1, x2, y1, y2 = nav_sample(hp)
+
+    train_data_x, train_label_x, train_data_y, train_label_y, test_data_x, test_data_y, test_label_x, test_label_y = nav_data_pair(
+        x1, x2, y1, y2, hp)
+
+    nav_plot(x1, x2, y1, y2, hp)
+
+    train_data_x = Variable(torch.Tensor(train_data_x).reshape(-1, 2).float())
+    train_label_x = Variable(
+        torch.Tensor(train_label_x).reshape(-1, 1).float())
+    # print(train_data_x.shape, train_label_x.shape)
+    '''x direction'''
+
+    net_x = NN(hp)
+    train_nn(net_x, train_data_x, train_label_x, hp)
+
+    pred_x = (net_x((torch.tensor(test_data_x)).float())).detach().numpy()
+
+    print(test_label_x.shape, pred_x.shape)
+    '''y direction'''
+
+    train_data_y = Variable(torch.Tensor(train_data_y).reshape(-1, 2).float())
+    train_label_y = Variable(
+        torch.Tensor(train_label_y).reshape(-1, 1).float())
+    # print(train_data_x.shape, train_label_x.shape)
+
+    net_y = NN(hp)
+    train_nn(net_y, train_data_y, train_label_y, hp)
+
+    pred_y = (net_y((torch.tensor(test_data_y)).float())).detach().numpy()
+
+    print(test_label_y.shape, pred_y.shape)
 
 
 if __name__ == '__main__':
@@ -289,10 +406,13 @@ if __name__ == '__main__':
 
     # run_reg()
     # run_nn()
-    # run_ncp()
 
-    run_reg_2d()
+    # run_reg_2d()
     # run_nn_2d()
+
+    # run_ncp()
+    run_nav()
+    # run_nav_nn()
     '''
     # test_log_prob()
     p1 = Normal(0, 3)

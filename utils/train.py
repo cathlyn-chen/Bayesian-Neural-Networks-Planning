@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.nn.functional import kl_div
 import torch.optim as optim
 from torch.autograd import Variable
 from torch.distributions import Normal, kl_divergence
@@ -54,7 +55,7 @@ def train_bnn(net, x_train, y_train, x_val, y_val, hp):
 
             # _, predictions, _, = eval_reg(net, x_test, hp.val_samples)
 
-            mse = eval_mse(predictions, y_val)
+            mse = eval_mse(predictions, y_val).mean()
             # print(x_val.shape, y_val.shape)
             # like = eval_like(net, x_val, y_val, hp)
             # print(like.shape, type(like))
@@ -103,7 +104,8 @@ def train_bnn_ncp(net, x_train, y_train, x_val, y_val, hp):
 
         # input_prior = np.sum(norm(0, hp.sigma_x).pdf(ood_X - X),
         #                      axis=0) / X.shape[0]
-        input_prior = np.mean(norm(0, hp.sigma_x).pdf(ood_X - X), axis=1)
+        # input_prior = np.mean(norm(0, hp.sigma_x).pdf(ood_X - X), axis=1)
+        input_prior = Normal(ood_X - X, hp.sigma_x)
         # print(ood_X.shape, input_prior)
 
         # plt.scatter(ood_X.reshape(-1, 1), input_prior)
@@ -113,19 +115,23 @@ def train_bnn_ncp(net, x_train, y_train, x_val, y_val, hp):
         y = Variable(torch.Tensor(y_train).float())
         output_prior = Normal(y, hp.sigma_y)
 
+        hp.data_prior = input_prior * output_prior
+
         log_like = net.sample_elbo(X, y)
 
-        # ood_mean = net.ncp_mean_dist(ood_X, y)
-        # ood_y = output_prior.sample(
-        #     (hp.pred_samples, )).reshape(hp.pred_samples, -1)
-        kl = net.ncp_mean_dist(ood_X, y)
+        ood_mean = net.ncp_mean_dist(ood_X, y)
+        ood_y = output_prior.sample(
+            (hp.pred_samples, )).reshape(hp.pred_samples, -1)
+
+        # kl = net.ncp_mean_dist(ood_X, y)
+        # loss = kl - log_like
 
         # print(ood_mean.shape, ood_y.shape)
 
         # np.mean(norm(0, hp.sigma_x).pdf(ood_X - X), axis=1)
 
         # loss = kl_divergence(output_prior, ood_mean) - log_like
-        loss = kl - log_like
+        loss = kl_div(ood_y, ood_mean) - log_like
 
         losses.append(loss.data.numpy())
 
@@ -164,7 +170,8 @@ def train_bnn_ncp(net, x_train, y_train, x_val, y_val, hp):
         with torch.no_grad():
             predictions = net(torch.from_numpy(
                 np.array(x_val)).float()).data.numpy()
-            mse = eval_mse(predictions, y_val)
+            mse = eval_mse(predictions, y_val).mean()
+
 
         loss_lst.append(np.mean(losses))
         mse_lst.append(mse)
@@ -173,8 +180,6 @@ def train_bnn_ncp(net, x_train, y_train, x_val, y_val, hp):
             print('epoch: {}'.format(e + 1), 'loss', np.mean(losses), 'MSE',
                   mse)
     # plot_like(x_val, like)
-
-    # plot_like_3d(x_val, like)
 
     print('Finished Training')
 

@@ -116,8 +116,18 @@ def reg_2d_hp():
 def nav_hp():
     hp = reg_hp()
 
-    hp.init_state = torch.tensor([1, 1])
-    hp.goal_state = torch.tensor([6, 6])
+    hp.n_input = 2
+    hp.n_epochs = 1200
+    hp.hidden_units = 6
+
+    hp.bound = 6.0
+    hp.grid = np.mgrid[0:hp.bound + 0.6:0.6, 0:hp.bound + 0.6:0.6]
+    hp.init_state = torch.tensor([0.3, 0.6])
+    hp.goal_state = torch.tensor([5.4, 5.4])
+
+    hp.sigma_prior1 = 3
+    hp.noise = 0.3
+    hp.activation = 'linear'
 
     return hp
 

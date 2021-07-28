@@ -11,6 +11,7 @@ def eval_reg(net, x, n):
         pred_lst = [
             net(torch.Tensor(x)).data.numpy().squeeze(1) for _ in range(n)
         ]  #(n, x_test.shape)
+        # print(net(torch.Tensor(x)).data.numpy())
 
         pred = np.array(pred_lst).T
 
@@ -47,4 +48,5 @@ def eval_like(net, x, y, hp):
 
 
 def eval_mse(pred, target):
-    return (np.square(pred - np.array(target).reshape(-1, 1))).mean()
+    return (np.square(pred.reshape(-1, 1) -
+                      np.array(target).reshape(-1, 1)))

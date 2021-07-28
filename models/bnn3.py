@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch.distributions.kl import kl_divergence
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
@@ -47,6 +48,8 @@ class BNNLayer(nn.Module):
             self.prior = torch.distributions.Normal(0, hp.sigma_prior1)
         elif hp.prior == 'scale_mixture':
             self.prior = ScaleMixtureGaussian(hp)
+        elif hp.prior == 'ncp':
+            self.prior = hp.data_prior
 
     def forward(self, input):
         # Sample weights
@@ -99,11 +102,16 @@ class BNN(nn.Module):
         self.noise_tol = hp.noise_tol  # Used to calculate likelihood
 
     def forward(self, x):
-        out = self.act(self.input_layer(x))
-        out = self.act(self.hidden_layer(out))
-        out = self.output_layer(out)
-        if self.hp.task == 'classification':
-            out = self.softmax(out)
+        if self.hp.activation == 'linear':
+            out = self.input_layer(x)
+            out = self.hidden_layer(out)
+            out = self.output_layer(out)
+        else:
+            out = self.act(self.input_layer(x))
+            out = self.act(self.hidden_layer(out))
+            out = self.output_layer(out)
+            if self.hp.task == 'classification':
+                out = self.softmax(out)
         return out
 
     def log_prior(self):
@@ -123,6 +131,7 @@ class BNN(nn.Module):
 
         # Initialize tensors
         outputs = torch.zeros(samples, target.shape[0])
+        # print(outputs.shape)
         log_priors = torch.zeros(samples)
         log_posts = torch.zeros(samples)
         if self.hp.task == 'regression':
@@ -176,17 +185,15 @@ class BNNNCP(nn.Module):
         out = self.act(self.l1(x))
         out = self.act(self.l2(out))
         out = self.lb(out)
-        if self.hp.task == 'classification':
-            out = self.softmax(out)
         return out
 
     def log_prior(self):
-        # return self.input_layer.log_prior + self.output_layer.log_prior
-        return self.l1.log_prior + self.l2.log_prior + self.lb.log_prior
+        # return self.l1.log_prior + self.l2.log_prior + self.lb.log_prior
+        return self.lb.log_prior
 
     def log_post(self):
-        # return self.input_layer.log_post + self.output_layer.log_post
-        return self.l1.log_post + self.l2.log_post + self.lb.log_post
+        # return self.l1.log_post + self.l2.log_post + self.lb.log_post
+        return self.lb.log_post
 
     def sample_elbo(self, input, target):
         samples = self.hp.n_samples
@@ -203,10 +210,10 @@ class BNNNCP(nn.Module):
         # Monte Carlo estimate
         log_like = log_likes.mean()
 
-        criterion = NLLLoss()
-        nll = criterion(outputs, target)
+        # criterion = NLLLoss()
+        # nll = criterion(outputs, target)
 
-        return nll
+        return log_like
 
     def ncp_mean_dist(self, ood_x, y):
         samples = self.hp.pred_samples
@@ -215,14 +222,17 @@ class BNNNCP(nn.Module):
         for i in range(samples):
             outputs[i] = self(ood_x).squeeze(1)
 
-        output_prior = Normal(y, self.hp.sigma_y)
-        mean_dist = Normal(outputs.mean(axis=1), outputs.std(axis=1))
+        # output_prior = Normal(y, self.hp.sigma_y)
+        # mean_dist = Normal(outputs.mean(axis=1), outputs.std(axis=1))
 
-        criterion = nn.KLDivLoss()
-        loss = criterion(output_prior, mean_dist)
-        print(type(loss))
+        # criterion = nn.KLDivLoss()
+        # loss = criterion(output_prior, mean_dist)
+        # print(type(loss))
+        # kl = kl_divergence(output_prior, mean_dist)
+        # print(kl)
 
-        return loss
+        # return kl
+        return outputs
 
 
 '''
