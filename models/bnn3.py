@@ -34,15 +34,6 @@ class BNNLayer(nn.Module):
         self.b_mu = nn.Parameter(torch.zeros(n_output))
         self.b_rho = nn.Parameter(torch.zeros(n_output))
 
-        # nn.init.xavier_uniform_(self.w_mu)
-        # nn.init.xavier_uniform_(self.w_rho)
-        # nn.init.zeros_(self.b_mu)
-        # nn.init.zeros_(self.b_rho)
-
-        # Initialize weight samples - calculated whenever the layer makes a prediction
-        self.w = None
-        self.b = None
-
         # Initialize prior distribution for all of the weights and biases
         if hp.prior == 'gaussian':
             self.prior = torch.distributions.Normal(0, hp.sigma_prior1)
@@ -50,6 +41,10 @@ class BNNLayer(nn.Module):
             self.prior = ScaleMixtureGaussian(hp)
         elif hp.prior == 'ncp':
             self.prior = hp.data_prior
+
+        # Initialize weight samples - calculated whenever the layer makes a prediction
+        self.w = None
+        self.b = None
 
     def forward(self, input):
         # Sample weights
@@ -99,7 +94,8 @@ class BNN(nn.Module):
         if hp.task == 'classification':
             self.softmax = nn.Softmax()
 
-        self.noise_tol = hp.noise_tol  # Used to calculate likelihood
+        # Noise tolerance used to calculate likelihood
+        self.noise_tol = hp.noise_tol
 
     def forward(self, x):
         if self.hp.activation == 'linear':
@@ -127,11 +123,8 @@ class BNN(nn.Module):
     def sample_elbo(self, input, target):
         samples = self.hp.n_samples
 
-        # ''' For Loop
-
         # Initialize tensors
         outputs = torch.zeros(samples, target.shape[0])
-        # print(outputs.shape)
         log_priors = torch.zeros(samples)
         log_posts = torch.zeros(samples)
         if self.hp.task == 'regression':
@@ -160,6 +153,7 @@ class BNN(nn.Module):
         return loss
 
 
+''' Noise Contrastive Prior
 class BNNNCP(nn.Module):
     def __init__(self, hp):
         super().__init__()
@@ -235,7 +229,6 @@ class BNNNCP(nn.Module):
         return outputs
 
 
-'''
 class BNNNCP(nn.Module):
     def __init__(self, hp):
         super().__init__()

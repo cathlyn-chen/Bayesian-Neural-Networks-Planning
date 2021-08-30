@@ -30,25 +30,25 @@ def nav_sample(hp):
     #      np.random.uniform(0.0, hp.bound, size=(hp.train_size // 2, ))),
     #     axis=0)
 
-    # x1 = np.concatenate(
-    #     (np.random.uniform(0.9, hp.bound, size=(hp.train_size // 2, )),
-    #      np.random.uniform(0.9, hp.bound, size=(hp.train_size // 2, ))),
-    #     axis=0)
-    # y1 = np.concatenate(
-    #     (np.tile(5.1, hp.train_size // 2), np.tile(0.6, hp.train_size // 2)),
-    #     axis=0)
+    x1 = np.concatenate(
+        (np.random.uniform(0.9, hp.bound, size=(hp.train_size // 2, )),
+         np.random.uniform(0.9, hp.bound, size=(hp.train_size // 2, ))),
+        axis=0)
+    y1 = np.concatenate(
+        (np.tile(5.1, hp.train_size // 2), np.tile(0.6, hp.train_size // 2)),
+        axis=0)
 
     # x1 = np.random.uniform(0.6, hp.bound-0.6, size=(hp.train_size))
     # y1 = np.tile(0.9, hp.train_size)
 
-    x1 = np.concatenate(
-        (np.random.uniform(0.6, hp.bound - 0.6, size=(hp.train_size // 2, )),
-         np.random.uniform(0.6, hp.bound, size=(hp.train_size // 2, ))),
-        axis=0)
-    y1 = np.concatenate(
-        (np.tile(5.1, hp.train_size // 2),
-         np.random.uniform(0.6, hp.bound, size=(hp.train_size // 2, ))),
-        axis=0)
+    # x1 = np.concatenate(
+    #     (np.random.uniform(0.6, hp.bound - 0.6, size=(hp.train_size // 2, )),
+    #      np.random.uniform(0.6, hp.bound, size=(hp.train_size // 2, ))),
+    #     axis=0)
+    # y1 = np.concatenate(
+    #     (np.tile(5.1, hp.train_size // 2),
+    #      np.random.uniform(0.6, hp.bound, size=(hp.train_size // 2, ))),
+    #     axis=0)
 
     # x2 = x1 + epsilon_x
     # y2 = y1 + epsilon_y

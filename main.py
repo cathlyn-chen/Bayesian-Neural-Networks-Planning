@@ -52,52 +52,6 @@ def run2(net, train_loader, test_loader, hp):
         print('epoch', epoch, 'loss', loss.data.numpy(), 'test_acc', acc)
 
 
-def web_reg():
-    hp = reg_hp()
-    net = BNN(hp)
-    x = torch.tensor([-2, -1.8, -1, 1, 1.8, 2]).reshape(-1, 1)
-    y = toy_function(x)
-    train_bnn(net, x, y, hp)
-    samples = 100
-    x_tmp = torch.linspace(-5, 5, 100).reshape(-1, 1)
-    y_samp = np.zeros((samples, 100))
-    for s in range(samples):
-        y_tmp = net(x_tmp).detach().numpy()
-        y_samp[s] = y_tmp.reshape(-1)
-
-    plt.plot(x_tmp.numpy(),
-             np.mean(y_samp, axis=0),
-             label='Mean Posterior Predictive')
-    plt.fill_between(x_tmp.numpy().reshape(-1),
-                     np.percentile(y_samp, 2.5, axis=0),
-                     np.percentile(y_samp, 97.5, axis=0),
-                     alpha=0.25,
-                     label='95% Confidence')
-    plt.legend()
-    plt.scatter(x, toy_function(x))
-    plt.title('Posterior Predictive')
-    plt.show()
-
-    samples = 100
-    x_tmp = torch.linspace(-100, 100, 1000).reshape(-1, 1)
-    y_samp = np.zeros((samples, 1000))
-    for s in range(samples):
-        y_tmp = net(x_tmp).detach().numpy()
-        y_samp[s] = y_tmp.reshape(-1)
-    plt.plot(x_tmp.numpy(),
-             np.mean(y_samp, axis=0),
-             label='Mean Posterior Predictive')
-    plt.fill_between(x_tmp.numpy().reshape(-1),
-                     np.percentile(y_samp, 2.5, axis=0),
-                     np.percentile(y_samp, 97.5, axis=0),
-                     alpha=0.25,
-                     label='95% Confidence')
-    plt.legend()
-    plt.scatter(x, toy_function(x))
-    plt.title('Posterior Predictive')
-    plt.show()
-
-
 def run_nn():
     hp = reg_hp()
     net = NN(hp)
@@ -117,6 +71,7 @@ def run_nn():
 def run_reg():
     hp = reg_hp()
 
+    # Different ground truth functions
     # x_train, y_train, x_test, y_true = MoG_data(hp)
     # x_train, y_train, x_test, y_true = paper_reg_data(hp)
     # x_train, y_train, x_test, y_true = f_data(hp)
@@ -150,21 +105,18 @@ def run_reg():
     # pred_plot(train_data, train_label, x_test, pred_mean.reshape(-1, 1),
     #           y_true)
 
-    plt_name = 'mog_unif.png'
+    plt_name = 'plt.png'
 
     uncertainty_plot(x_train, y_train, x_test, y_true, pred_mean, pred_std,
                      plt_name)
 
     # plot_hist(net)
 
-    # web(net)
-
 
 def run_reg_2d():
     hp = reg_2d_hp()
 
     # x_train, y_train, x_test, y_true = gaussian_data_2d(hp)
-
     x_train, y_train, x_val, y_val, x_test, y_true = poly_data_2d(hp)
 
     # Initial plots
@@ -193,14 +145,9 @@ def run_reg_2d():
     # plot_loss(mses)
     # plot_loss(likes)
 
-    # y_pred = (net((torch.tensor(x_train)).float())).detach().numpy()
-
     _, y_pred, pred_std = eval_reg(net, x_test, hp.pred_samples)
 
     like = eval_like(net, x_test, y_true, hp)
-    # print(like)
-
-    # print(y_pred.shape, type(likes[0]))
 
     # Back to original data
     x_train = inverse_data(scaler_x, x_train)
@@ -234,15 +181,7 @@ def run_nn_2d():
     pred_plot_3d(x_train, y_train, y_pred, y_true, hp)
 
 
-def test_log_prob():
-    dist = Normal(3, 1)
-    sample = dist.sample()  # x
-    lp = dist.log_prob(sample)
-    print(
-        lp,
-        sample)  # more likly the sample (closer to mean), greater the log_prob
-
-
+''' Noise Contrastive Prior 
 def run_ncp():
     hp = reg_ncp()
 
@@ -277,6 +216,7 @@ def run_ncp():
                      plt_name)
 
     # plot_hist(net)
+'''
 
 
 def run_nav():
@@ -303,8 +243,8 @@ def run_nav():
     '''x direction'''
 
     net_x = BNN(hp)
-    _, _, _ = train_bnn(net_x, train_data_x, train_label_x,
-                                    test_data_x, test_label_x, hp)
+    _, _, _ = train_bnn(net_x, train_data_x, train_label_x, test_data_x,
+                        test_label_x, hp)
 
     # plot_loss(losses)
     # plot_loss(mses)
@@ -328,7 +268,7 @@ def run_nav():
 
     net_y = BNN(hp)
     _, mse_lst, _ = train_bnn(net_y, train_data_y, train_label_y, test_data_y,
-                        test_label_y, hp)
+                              test_label_y, hp)
 
     _, pred_mean_y, pred_std_y = eval_reg(net_y, test_data_y, hp.pred_samples)
 
@@ -361,8 +301,8 @@ def run_nav():
 
     nav_pred_plot(x1, x2, y1, y2, pred_mean_x + pred_mean_y,
                   test_label_x + test_label_y, hp)
-    nav_uncertainty(x1, x1+x2, y1, y1+y2, mse, hp)
-    nav_uncertainty(x1, x1+x2, y1, y1+y2, pred_std, hp)
+    nav_uncertainty(x1, x1 + x2, y1, y1 + y2, mse, hp)
+    nav_uncertainty(x1, x1 + x2, y1, y1 + y2, pred_std, hp)
 
 
 def run_nav_nn():
@@ -402,8 +342,6 @@ def run_nav_nn():
 
 
 if __name__ == '__main__':
-    # run1()
-
     # run_reg()
     # run_nn()
 
@@ -413,12 +351,3 @@ if __name__ == '__main__':
     # run_ncp()
     run_nav()
     # run_nav_nn()
-    '''
-    # test_log_prob()
-    p1 = Normal(0, 3)
-    p2 = Normal(0, 1)
-    v1 = p1.sample((900, ))
-    v2 = p2.sample((900, ))
-    print(kl_divergence(p1, p2))
-    print(kl_div(v1, v2))
-    '''

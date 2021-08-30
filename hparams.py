@@ -117,8 +117,10 @@ def nav_hp():
     hp = reg_hp()
 
     hp.n_input = 2
-    hp.n_epochs = 1200
-    hp.hidden_units = 6
+
+    hp.learning_rate = 0.01
+    hp.n_epochs = 3000
+    hp.hidden_units = 30
 
     hp.bound = 6.0
     hp.grid = np.mgrid[0:hp.bound + 0.6:0.6, 0:hp.bound + 0.6:0.6]
