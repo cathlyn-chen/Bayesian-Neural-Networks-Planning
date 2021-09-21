@@ -331,7 +331,6 @@ def run_nav_nn():
     train_data_y = Variable(torch.Tensor(train_data_y).reshape(-1, 2).float())
     train_label_y = Variable(
         torch.Tensor(train_label_y).reshape(-1, 1).float())
-    # print(train_data_x.shape, train_label_x.shape)
 
     net_y = NN(hp)
     train_nn(net_y, train_data_y, train_label_y, hp)
