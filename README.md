@@ -6,6 +6,8 @@ Bayesian Neural Networks (BNNs) extend standard neural networks with posterior i
 ## Regression in 1D
 Run/uncomment the function `run_reg()` in `main.py`. Can also change hyperparameter settings for 1D regression in the function `reg_hp()` in `hparams.py`.
 
+![plot](plots/reg_1d.jpg)
+
 ## Regression in 2D
 Run/uncomment the function `run_reg_2d()` in `main.py`. Can also change hyperparameter settings for 2D regression in the function `reg_2d_hp()` in `hparams.py`.
 
