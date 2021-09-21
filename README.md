@@ -11,8 +11,14 @@ Run/uncomment the function `run_reg()` in `main.py`. Can also change hyperparame
 ## Regression in 2D
 Run/uncomment the function `run_reg_2d()` in `main.py`. Can also change hyperparameter settings for 2D regression in the function `reg_2d_hp()` in `hparams.py`.
 
+![plot](plots/reg_2d_1.jpg)
+![plot](plots/reg_2d_2.jpg)
+
 ## Navigation
 Run/uncomment the function `run_nav()` in `main.py`. Can also change hyperparameter settings in the function `nav_hp()` in `hparams.py`. 
 
+![plot](plots/nav.jpg)
+
 ## Classification
 Run `bbb_torch_colab.py` in the `notebooks` folder. 
+![plot](plots/class.jpg)
