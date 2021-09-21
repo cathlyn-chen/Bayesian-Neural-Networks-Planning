@@ -21,4 +21,5 @@ Run/uncomment the function `run_nav()` in `main.py`. Can also change hyperparame
 
 ## Classification
 Run `bbb_torch_colab.py` in the `notebooks` folder. 
+
 ![plot](plots/class.jpg)
